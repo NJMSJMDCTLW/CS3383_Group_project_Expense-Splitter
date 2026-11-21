@@ -14,7 +14,8 @@ import java.util.Map;
 @AIGenerated(tool = "Claude Code", prompt = "P02")
 public final class Expense {
 
-    private static final long MAX_TOTAL_CENTS = 100_000_000L;
+    /** Largest allowed expense total in cents (1,000,000.00). Also used by ExpenseService. */
+    public static final long MAX_TOTAL_CENTS = 100_000_000L;
 
     private final int id;
     private final String description;
