@@ -24,18 +24,23 @@ Package root: `com.splitter`
 
 | Package   | Responsibility | May depend on |
 |-----------|----------------|---------------|
-| `model`   | Member, Group, Expense, Money (value objects, no logic about UI or files) | nothing |
-| `split`   | `SplitStrategy` interface + Equal / Exact / Percentage / Shares, `SplitStrategyFactory` | model |
-| `service` | `ExpenseService` interface + implementation: add expense, balances, settle-up (debt simplification) | model, split, command |
-| `command` | `Command` interface, `AddExpenseCommand`, `RemoveExpenseCommand`, `CommandHistory` (undo) | model |
-| `storage` | `Repository` interface + CSV/JSON file implementation | model |
-| `gui`     | Swing views + controllers/presenters | **service interface only** |
+| `exception` | `ValidationException` (unchecked), `StorageException` (checked) | nothing (every package may use it) |
+| `model`   | Member, Group, Expense, Money (value objects, no logic about UI or files) | exception |
+| `split`   | `SplitStrategy` interface + Equal / Exact / Percentage / Shares, `SplitStrategyFactory` | model, exception |
+| `service` | `ExpenseService` interface + implementation: add expense, balances, settle-up (debt simplification) | model, split, command, exception |
+| `command` | `Command` interface, `AddExpenseCommand`, `RemoveExpenseCommand`, `CommandHistory` (undo) | model, exception |
+| `storage` | `Repository` interface + CSV file implementation | model, exception |
+| `gui`     | MVP: Swing views, presenters, `InputParser`, `MoneyFormatter` | **`ExpenseService` interface**, model, exception |
 
 Hard rules:
 - **No business logic in `gui`.** Views only collect input and display results. Anything that can be
   unit-tested belongs in `service` / `split`.
-- `model`, `split`, `service` must not import `javax.swing` or `java.awt`.
+- `docs/DESIGN.md` is the authority for class and method contracts. If a prompt conflicts with
+  DESIGN.md, follow DESIGN.md and tell me.
+- `model`, `split`, `service`, `command`, `storage`, `exception` and the gui presenters must not import
+  `javax.swing` or `java.awt`.
 - The GUI talks to `ExpenseService` (an interface), never to implementation classes.
+- Presenters implement `ServiceListener`; Swing components never do.
 - Build order: core logic with tests first (bottom-up), GUI last on top of the real service.
 - GUI observes the service (Observer pattern): the service notifies listeners when data changes,
   and views refresh themselves.
@@ -44,11 +49,24 @@ Design patterns used (keep them recognisable, they are presented and graded):
 Strategy (split methods), Command (undo), Factory (strategy creation), Observer (GUI refresh), MVC/MVP (GUI).
 
 ## Domain rules
-- Money is stored as `long` cents (never `double`). Display with 2 decimal places.
-- Rounding: when an amount cannot be divided evenly, the leftover cents go to participants in list
-  order, one cent each, so the parts always sum exactly to the total.
+- Money is stored as `long` cents (never `double`). Display with 2 decimal places. Single currency; the
+  currency symbol exists only in `gui.MoneyFormatter`. `Money.toString()` and `Transfer.toString()`
+  contain no symbol.
+- Rounding: each participant first gets the floor of the exact share (EQUAL: total/n; PERCENTAGE:
+  total x pct/100; SHARES: total x weight/sum of weights; EXACT: no rounding). The leftover cents go one
+  cent each in list order, starting from the first participant, only to participants whose
+  percentage/weight is greater than zero (EQUAL: everyone), so the parts always sum exactly to the total.
 - Validation (reject with a clear message): amount <= 0, empty participant list, payer not in group,
   exact amounts not summing to total, percentages not summing to 100, shares all zero, duplicate member name.
+- Max amount: a single expense total may not exceed 1,000,000.00 (100,000,000 cents).
+- Member names: trimmed, not blank, at most 30 characters, no line breaks; unique ignoring case
+  (comparison key = trimmed name lower-cased with `Locale.ROOT`; `getName()` keeps the user's casing).
+- Percentages have at most 2 decimals and are compared exactly (no tolerance) with 100.
+- Exceptions: `ValidationException` is unchecked, `StorageException` is checked; both live in
+  `com.splitter.exception`. Presenters catch both and show the message in the view.
+- Save format: CSV, no third-party library. First line is a format-version marker; stores group name, next
+  expense id and computed shares. Fields are quoted/escaped; descriptions and names may not contain line
+  breaks. A corrupt, empty or wrong-version file gives a `StorageException`.
 - Settle-up uses greedy matching on net balances (largest debtor pays largest creditor, repeat), giving
   at most n-1 transfers. It is not guaranteed to be the global minimum (that problem is NP-hard); this is
   a documented design decision. Members with zero balance do not appear. Transfers always sum to zero.
@@ -58,10 +76,13 @@ Main window with tabs:
 1. **Members** – add/remove members of the current group.
 2. **Expenses** – table of expenses + form to add one: description, payer (combo box), amount,
    participants (checkboxes), split method (combo box). The input fields change with the split method
-   (exact amount / percentage / shares per participant).
+   (exact amount / percentage / shares per participant). A "Remove selected" button removes an expense.
 3. **Balances** – net balance per member (positive = is owed, negative = owes).
 4. **Settle Up** – list of suggested transfers "A pays B $x".
-Menu/toolbar: New, Open, Save, Undo (Ctrl+Z). Errors are shown with `JOptionPane`, never as stack traces.
+Menu/toolbar: New, Open, Save, Undo (Ctrl+Z). Undo covers expense add/remove only, so label the item
+accordingly (e.g. "Undo Expense Change"). New and Open ask for confirmation ("Unsaved changes will be lost")
+whenever the current group has any member or expense (no dirty flag).
+Errors are shown with `JOptionPane`, never as stack traces.
 
 ## Submission requirements
 The course requires a fixed deliverable structure (Source/, Release/, Docs/, README.md, ActivityLog.xlsx,
