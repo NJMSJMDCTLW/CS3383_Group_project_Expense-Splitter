@@ -109,7 +109,7 @@ SplitMethod method()
 | `EQUAL` | ignored |
 | `EXACT` | the amount in currency units, at most 2 decimals |
 | `PERCENTAGE` | a percent, at most 2 decimals |
-| `SHARES` | a share count (weight) |
+| `SHARES` | a share count (weight), at most 2 decimals |
 
 - **Output:** ordered map (participant order), member → Money. It always sums exactly to `total`.
 - **Rounding rule:** each participant first gets the floor of the exact share, in cents:
@@ -130,7 +130,7 @@ SplitMethod method()
   - `EXACT`: any amount < 0, more than 2 decimals, or the amounts don't sum to total.
   - `PERCENTAGE`: any value < 0, more than 2 decimals, or the sum is not equal to 100 (compared exactly with
     `BigDecimal.compareTo`, no tolerance; so 33.33 × 3 is rejected and users should use `EQUAL`).
-  - `SHARES`: any value < 0, or all values are zero.
+  - `SHARES`: any value < 0, more than 2 decimals, or all values are zero.
   - `EQUAL`: none beyond the common ones.
 
 ### 3.2 `SplitStrategyFactory`
@@ -183,6 +183,10 @@ It is called after any successful change: a member added or removed, an expense 
 | `List<Transfer> getSettlements()` | greedy: the largest debtor pays the largest creditor, repeat | at most n−1 transfers; members with balance zero do not appear; ties between equal balances are broken by member insertion order, so the result is deterministic |
 
 Settle-up only suggests transfers. Payments are not recorded; after people have paid, the user starts a New group.
+
+`getBalances()` and `getSettlements()` are implemented by two package-private helpers in `service`:
+`BalanceCalculator.calculate(Group)` and `SettlementCalculator.suggest(Map<Member,Money>)`. They hold only the
+arithmetic and are called by `ExpenseServiceImpl`; they are not part of the public API.
 
 **Undo, and New / Open / Save**
 | Method | Output | Errors |
@@ -435,8 +439,6 @@ Decisions agreed with the analysis/docs member on 2026-11-21 (reported by the de
   uses that member. Sequence: add expense E (payer A); remove E; remove member A (allowed, E no longer exists);
   undo. Undoing `RemoveExpenseCommand` calls `Group.addExpense(E)`, which must reject E because A is no longer a
   member. The undo then fails with a `ValidationException`. The design does not yet say what should happen.
-- **Weights in `SHARES`.** shares weights limited to 2 decimal places.
-  The text above allows any non-negative `BigDecimal` (at least one non-zero).
 - **Group name rules.** The decisions give name rules only for members. The text above uses "not blank, no line
   breaks" for the group name, so that CSV stays one record per line. No length limit is set.
 - **Description rules.** Only "no line breaks" is required (Q7). No length limit is set.
@@ -498,3 +500,5 @@ The PlantUML diagram in section 5 was not edited. After these decisions it must 
   and implements `ServiceListener`), and the helpers `InputParser`, `ParticipantText` and `MoneyFormatter`.
 - The Swing panels do not implement `ServiceListener` and do not call `ExpenseService` directly.
 - `gui` depends on `service`, `model` and `exception`.
+- Three package-private helpers may be drawn (or left out and mentioned in a note): `split.SplitSupport`,
+  `service.BalanceCalculator`, `service.SettlementCalculator`.
