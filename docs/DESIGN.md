@@ -137,6 +137,8 @@ SplitMethod method()
 ```
 static SplitStrategy forMethod(SplitMethod m)
 ```
+SplitSupport is a package-private helper in split. It holds the validation shared by all strategies and the leftover-cent distribution, so the rounding rule exists in one place. It is not part of the public API.
+
 It throws `ValidationException` for null. Implementations are `EqualSplit`, `ExactSplit`, `PercentageSplit` and `SharesSplit`.
 
 ### 3.3 `ParticipantInput`
@@ -433,7 +435,7 @@ Decisions agreed with the analysis/docs member on 2026-11-21 (reported by the de
   uses that member. Sequence: add expense E (payer A); remove E; remove member A (allowed, E no longer exists);
   undo. Undoing `RemoveExpenseCommand` calls `Group.addExpense(E)`, which must reject E because A is no longer a
   member. The undo then fails with a `ValidationException`. The design does not yet say what should happen.
-- **Weights in `SHARES`.** The decisions do not say whether share counts must be whole numbers or may be decimals.
+- **Weights in `SHARES`.** shares weights limited to 2 decimal places.
   The text above allows any non-negative `BigDecimal` (at least one non-zero).
 - **Group name rules.** The decisions give name rules only for members. The text above uses "not blank, no line
   breaks" for the group name, so that CSV stays one record per line. No length limit is set.

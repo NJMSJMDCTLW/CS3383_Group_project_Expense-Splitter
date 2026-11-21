@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 /** Splits in proportion to share counts (weights). At least one weight must be greater than zero. */
-@AIGenerated(tool = "Claude Code", prompt = "P03")
+@AIGenerated(tool = "Claude Code", prompt = "P03", refinedBy = "Wang Man Nga", changes = "SHARES weights is limited to 2 decimal places, consistent to percentages")
 public final class SharesSplit implements SplitStrategy {
 
     @Override
@@ -19,6 +19,7 @@ public final class SharesSplit implements SplitStrategy {
         BigDecimal sum = BigDecimal.ZERO;
         for (ParticipantInput input : inputs) {
             SplitSupport.checkNotNegative(input, "number of shares");
+            SplitSupport.checkAtMostTwoDecimals(input, "number of shares");
             sum = sum.add(input.value());
         }
         if (sum.signum() == 0) {
