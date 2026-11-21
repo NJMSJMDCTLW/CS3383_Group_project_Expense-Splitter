@@ -2,109 +2,106 @@
 
 ## Project context
 - Course: CS3383 (Agentic Coding / AI for Software Engineering), group project, 4 members.
-- I am the **only developer**: I write all code (core logic and GUI). The other 3 members own
-  analysis/docs, testing and project management. The tester also writes extra boundary tests by hand.
+- I am the **only developer**: I write all production code (core logic and GUI). The other 3 members own
+  analysis/docs (UML, design report), testing (all JUnit tests, bug reports) and project management.
 - Product: a desktop app that records shared expenses within a group, splits them with different
-  methods, shows who owes whom, and suggests the minimum number of transfers to settle up.
-- Grading cares about: UML design and design patterns, JUnit tests (>50, with justification and
-  coverage), bug reports (>10, real ones), and **clear documentation of AI-generated vs.
-  human-refined code**. Keep this in mind for every change.
+  methods, shows who owes whom, and suggests transfers to settle up.
+- Grading cares about: UML design and design patterns, clear documentation of **AI-generated vs.
+  human-refined code**, and real bugs found by testing. Keep this in mind for every change.
+
+## Scope of Claude's work (important)
+- **Write production code only. Do NOT create or edit test files** (`src/test/**`). A teammate writes all
+  tests against the public signatures in `docs/DESIGN.md`.
+- Verify your work with `mvn compile`. Run `mvn test` / `mvn verify` only when I ask, or when test files
+  from my teammate already exist. Never delete, skip or weaken an existing test; report failures instead.
+- Do not edit diagrams. Do not write documents under `docs/` unless the prompt tells you to.
+- Public classes and method signatures must match `docs/DESIGN.md` exactly. If you think a signature
+  should change, stop and tell me; do not change it on your own.
 
 ## Tech stack
-- Java 17, Maven, JUnit 5, JaCoCo (coverage), **Swing** for the GUI (no third-party UI libraries).
-- No external runtime dependencies, so `mvn package` produces a runnable jar.
-
-## Commands
-- Build + unit tests: `mvn test`
-- Tests + coverage report: `mvn verify` (report at `target/site/jacoco/index.html`)
-- Package: `mvn package`, then run `java -jar target/expense-splitter.jar`
+- Java 17, Maven, JUnit 5, JaCoCo, **Swing** for the GUI. No third-party libraries.
+- `mvn package` must produce a runnable jar: `java -jar target/expense-splitter.jar`.
 
 ## Architecture
-Package root: `com.splitter`
+Package root: `com.splitter`. **`docs/DESIGN.md` is the authority for class and method contracts.**
+If a prompt conflicts with it, follow DESIGN.md and tell me.
 
-| Package   | Responsibility | May depend on |
-|-----------|----------------|---------------|
-| `exception` | `ValidationException` (unchecked), `StorageException` (checked) | nothing (every package may use it) |
-| `model`   | Member, Group, Expense, Money (value objects, no logic about UI or files) | exception |
-| `split`   | `SplitStrategy` interface + Equal / Exact / Percentage / Shares, `SplitStrategyFactory` | model, exception |
-| `service` | `ExpenseService` interface + implementation: add expense, balances, settle-up (debt simplification) | model, split, command, exception |
-| `command` | `Command` interface, `AddExpenseCommand`, `RemoveExpenseCommand`, `CommandHistory` (undo) | model, exception |
-| `storage` | `Repository` interface + CSV file implementation | model, exception |
-| `gui`     | MVP: Swing views, presenters, `InputParser`, `MoneyFormatter` | **`ExpenseService` interface**, model, exception |
+| Package     | Responsibility | May depend on |
+|-------------|----------------|---------------|
+| `exception` | `ValidationException` (unchecked), `StorageException` (checked) | nothing |
+| `model`     | Member, Group, Expense, Money, Transfer (value objects, no UI/file logic) | exception |
+| `split`     | `SplitStrategy`, `ParticipantInput`, Equal / Exact / Percentage / Shares, `SplitStrategyFactory` | model, exception |
+| `command`   | `Command`, `AddExpenseCommand`, `RemoveExpenseCommand`, `CommandHistory` (undo) | model, exception |
+| `storage`   | `Repository` interface + CSV implementation | model, exception |
+| `service`   | `ExpenseService` interface + implementation, `ServiceListener` | model, split, command, storage, exception |
+| `gui`       | Swing views, presenters, `InputParser`, `MoneyFormatter` | service, model, exception |
+| `meta`      | `@AIGenerated` annotation | nothing |
 
 Hard rules:
-- **No business logic in `gui`.** Views only collect input and display results. Anything that can be
-  unit-tested belongs in `service` / `split`.
-- `docs/DESIGN.md` is the authority for class and method contracts. If a prompt conflicts with
-  DESIGN.md, follow DESIGN.md and tell me.
-- `model`, `split`, `service`, `command`, `storage`, `exception` and the gui presenters must not import
-  `javax.swing` or `java.awt`.
+- **No business logic in `gui`.** Views only collect input and show results. Anything unit-testable
+  belongs in `service` / `split` / `model`.
+- Only `gui` may import `javax.swing` or `java.awt`. Presenters must not import them either.
+- `model`, `split`, `command`, `storage` must never depend on `service` or `gui`.
 - The GUI talks to `ExpenseService` (an interface), never to implementation classes.
-- Presenters implement `ServiceListener`; Swing components never do.
-- Build order: core logic with tests first (bottom-up), GUI last on top of the real service.
-- GUI observes the service (Observer pattern): the service notifies listeners when data changes,
-  and views refresh themselves.
+- GUI is MVP: view interfaces implemented by Swing panels; presenters depend on the service and on a view
+  interface. **Presenters implement `ServiceListener`; Swing components never do.**
+- Build order: core logic first (bottom-up), GUI last on top of the real service.
 
-Design patterns used (keep them recognisable, they are presented and graded):
-Strategy (split methods), Command (undo), Factory (strategy creation), Observer (GUI refresh), MVC/MVP (GUI).
+Design patterns (keep them recognisable, they are presented and graded):
+Strategy (split methods), Command (undo), Factory (strategy creation), Observer (`ServiceListener.onDataChanged`), MVP (GUI).
 
 ## Domain rules
-- Money is stored as `long` cents (never `double`). Display with 2 decimal places. Single currency; the
-  currency symbol exists only in `gui.MoneyFormatter`. `Money.toString()` and `Transfer.toString()`
-  contain no symbol.
-- Rounding: each participant first gets the floor of the exact share (EQUAL: total/n; PERCENTAGE:
-  total x pct/100; SHARES: total x weight/sum of weights; EXACT: no rounding). The leftover cents go one
-  cent each in list order, starting from the first participant, only to participants whose
-  percentage/weight is greater than zero (EQUAL: everyone), so the parts always sum exactly to the total.
-- Validation (reject with a clear message): amount <= 0, empty participant list, payer not in group,
-  exact amounts not summing to total, percentages not summing to 100, shares all zero, duplicate member name.
-- Max amount: a single expense total may not exceed 1,000,000.00 (100,000,000 cents).
-- Member names: trimmed, not blank, at most 30 characters, no line breaks; unique ignoring case
-  (comparison key = trimmed name lower-cased with `Locale.ROOT`; `getName()` keeps the user's casing).
-- Percentages have at most 2 decimals and are compared exactly (no tolerance) with 100.
-- Exceptions: `ValidationException` is unchecked, `StorageException` is checked; both live in
-  `com.splitter.exception`. Presenters catch both and show the message in the view.
-- Save format: CSV, no third-party library. First line is a format-version marker; stores group name, next
-  expense id and computed shares. Fields are quoted/escaped; descriptions and names may not contain line
-  breaks. A corrupt, empty or wrong-version file gives a `StorageException`.
-- Settle-up uses greedy matching on net balances (largest debtor pays largest creditor, repeat), giving
-  at most n-1 transfers. It is not guaranteed to be the global minimum (that problem is NP-hard); this is
-  a documented design decision. Members with zero balance do not appear. Transfers always sum to zero.
+- Money is `long` cents, never `double`. Display with 2 decimals. The currency symbol exists only in
+  `gui.MoneyFormatter`; `Money.toString()` and `Transfer.toString()` contain no symbol.
+- `Money.parse` accepts only non-negative decimals with at most 2 decimal places.
+- Member identity: key = trimmed name lower-cased with `Locale.ROOT`; `getName()` keeps the user's casing.
+  Names: trimmed, not blank, max 30 chars, no line breaks. Duplicate names (by key) are rejected.
+- A single expense total may not exceed 1,000,000.00. Descriptions may not contain line breaks.
+- Rounding: EQUAL floor(total/n); PERCENTAGE floor(total*pct/100); SHARES floor(total*weight/sum);
+  EXACT has none. Leftover cents (always fewer than the number of participants) go one cent each in
+  participant order, only to participants with weight > 0 (EQUAL: everyone). Shares always sum to the total.
+- Percentages: up to 2 decimals, sum compared exactly to 100 (no tolerance).
+- Validation (clear message, `ValidationException`): amount <= 0 or over the limit, no participants,
+  payer not a member (payer need not be a participant), exact amounts not summing to total, percentages
+  not summing to 100, all shares zero, duplicate member, removing a member who is payer/participant of any expense.
+- Participants with a zero share stay in `Expense.shares` with `Money.ZERO`.
+- Expense ids only increase and are never reused (even after undo); the saved file stores the next id.
+  Group keeps expenses sorted by id and rejects duplicate ids, so undo of a removal restores the position.
+- Undo covers expense add/remove only (no member undo, no redo).
+- Settle-up is greedy (largest debtor pays largest creditor, repeat): at most n-1 transfers, not
+  guaranteed globally minimal (NP-hard), deterministic (ties by member insertion order). It only suggests
+  transfers; payments are not recorded. Members with zero balance do not appear in transfers.
+  Balances are ordered by member insertion order, include zero balances, and always sum to 0.
+- Exceptions: `ValidationException` unchecked, `StorageException` checked. Presenters catch both and show
+  the message in the view (`JOptionPane`), never a stack trace.
+- Storage: CSV, no library. First line is a format-version marker, fields quoted/escaped, stores group
+  name, next expense id and computed shares. Corrupt, empty or wrong-version files raise `StorageException`.
 
 ## GUI requirements
 Main window with tabs:
-1. **Members** – add/remove members of the current group.
-2. **Expenses** – table of expenses + form to add one: description, payer (combo box), amount,
-   participants (checkboxes), split method (combo box). The input fields change with the split method
-   (exact amount / percentage / shares per participant). A "Remove selected" button removes an expense.
-3. **Balances** – net balance per member (positive = is owed, negative = owes).
-4. **Settle Up** – list of suggested transfers "A pays B $x".
-Menu/toolbar: New, Open, Save, Undo (Ctrl+Z). Undo covers expense add/remove only, so label the item
-accordingly (e.g. "Undo Expense Change"). New and Open ask for confirmation ("Unsaved changes will be lost")
-whenever the current group has any member or expense (no dirty flag).
-Errors are shown with `JOptionPane`, never as stack traces.
+1. **Members**: add / remove members.
+2. **Expenses**: table + form (description, payer combo box, amount, participant checkboxes, split method
+   combo box; inputs change per method) and a **Remove selected** button (undoable).
+3. **Balances**: net balance per member (positive = is owed, negative = owes).
+4. **Settle Up**: list of suggested transfers "A pays B $x".
+Menu/toolbar: New, Open, Save, Undo (Ctrl+Z, labelled as undoing the last expense change).
+New and Open ask for confirmation ("Unsaved changes will be lost") whenever the group has any member or expense.
 
 ## Submission requirements
 The course requires a fixed deliverable structure (Source/, Release/, Docs/, README.md, ActivityLog.xlsx,
-packaged as Group_#_Project.zip) and a set of documents with page limits. The full specification and
-marking criteria are in `docs/DELIVERABLES.md`; read it before creating or editing anything under `docs/`,
-the README, scripts, or the packaging process. Keep the repo so that packaging is a copy step.
-Never write members' self-assessments or ActivityLog hours, and never invent bugs, releases, names or dates.
+packaged as Group_#_Project.zip). The specification is in `docs/DELIVERABLES.md`; read it before creating
+or editing anything under `docs/`, the README, scripts or packaging. Never write members' self-assessments
+or ActivityLog hours, and never invent bugs, releases, names or dates.
 
 ## How to work with me (rules for Claude)
 - Work in small steps. For anything touching more than ~3 files, show a plan first and wait for my OK.
 - Do not add features or requirements I did not ask for. If something is unclear, ask.
-- After every change run `mvn test`. Never delete, skip or weaken an existing test to make it pass —
-  report the failure instead.
-- When you write tests, state for each test which requirement, branch or condition it targets.
-  Point out cases you think are still untested.
 - Mark every class or method you generate with `@AIGenerated(tool = "Claude Code", prompt = "<prompt id>")`
-  (annotation in `com.splitter.meta`). Keep the annotation when I later edit the code; I will fill in
-  `refinedBy` and `changes` myself.
+  (annotation in `com.splitter.meta`). Keep it when I later edit the code; I fill in `refinedBy` and
+  `changes` myself.
 - After each generated change, append one row to `docs/AI_USAGE_LOG.md`:
   date | prompt id | files | what was generated | open issues you noticed.
-- Git: when I ask you to commit your generated code, use the prefix `[AI]` and mention the prompt id,
-  e.g. `[AI] P03 Add Swing expense form`. Never commit my manual edits under `[AI]`; I commit those
-  myself with `[REFINE]` or `[HUMAN]`.
+- Git: do not commit unless I ask. When I ask, use the prefix `[AI]` and the prompt id, e.g.
+  `[AI] P03 Add split strategies`. Never commit my manual edits under `[AI]`; I use `[REFINE]` or `[HUMAN]`.
 - If you notice a bug in existing code, do not silently fix it. Describe it (steps to reproduce,
-  expected vs actual) so it can go into the bug report, then fix only if I agree.
+  expected vs actual) so it can go into the bug report, and fix only if I agree.
