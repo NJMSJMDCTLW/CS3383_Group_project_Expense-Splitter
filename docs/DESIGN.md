@@ -85,6 +85,7 @@ and the duplicate-name check all use this key. `getName()` keeps the user's own 
 An expense stores the computed shares. That makes balances and saved files independent of the strategy code.
 A participant with a zero share stays in `shares` with `Money.ZERO`. Such a member still counts as a
 participant, so the member cannot be removed from the group.
+The total limit (100,000,000 cents) is exposed as `public static final long Expense.MAX_TOTAL_CENTS`; `ExpenseService.addExpense` (4.2) reuses it instead of defining its own.
 
 ### 2.6 `Transfer` (immutable)
 | Method | Output | Validation |
