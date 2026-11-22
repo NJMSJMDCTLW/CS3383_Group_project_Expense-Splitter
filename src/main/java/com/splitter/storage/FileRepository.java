@@ -39,7 +39,7 @@ import java.util.Objects;
  * Fields that contain a comma, a quote or a line break are put in double quotes, and a quote inside a
  * quoted field is written twice.
  */
-@AIGenerated(tool = "Claude Code", prompt = "P06")
+@AIGenerated(tool = "Claude Code", prompt = "P06", refinedBy = "Wang Man Nga", changes = "replaced a invisible whitespace character with a unicode escape sequence in line 325, so that the code is more readable.")
 public class FileRepository implements Repository {
 
     private static final String MARKER = "EXPENSE_SPLITTER";
@@ -325,7 +325,7 @@ public class FileRepository implements Repository {
         List<Rec> recs = new ArrayList<>();
         for (int i = 0; i < lines.size(); i++) {
             String line = lines.get(i);
-            if (i == 0 && line.startsWith("﻿")) {
+            if (i == 0 && line.startsWith("\uFEFF")) {
                 line = line.substring(1);
             }
             if (line.isBlank()) {
