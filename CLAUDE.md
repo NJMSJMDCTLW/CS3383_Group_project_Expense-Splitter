@@ -40,7 +40,7 @@ If a prompt conflicts with it, follow DESIGN.md and tell me.
 Hard rules:
 - **No business logic in `gui`.** Views only collect input and show results. Anything unit-testable
   belongs in `service` / `split` / `model`.
-- Only `gui` may import `javax.swing` or `java.awt`. Presenters must not import them either.
+- Only `gui` and the entry point `App` may import `javax.swing` or `java.awt` (`App` needs `SwingUtilities.invokeLater`). Presenters must not import them either.
 - `model`, `split`, `command`, `storage` must never depend on `service` or `gui`.
 - The GUI talks to `ExpenseService` (an interface), never to implementation classes.
 - GUI is MVP: view interfaces implemented by Swing panels; presenters depend on the service and on a view

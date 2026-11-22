@@ -12,7 +12,7 @@ import com.splitter.storage.FileRepository;
 import javax.swing.SwingUtilities;
 
 /** Application entry point: wires the service, the presenters and the views, then shows the window. */
-@AIGenerated(tool = "Claude Code", prompt = "P01")
+@AIGenerated(tool = "Claude Code", prompt = "P01, P07")
 public final class App {
 
     private App() {

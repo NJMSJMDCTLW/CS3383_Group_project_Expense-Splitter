@@ -274,6 +274,10 @@ implement `ServiceListener`, and must not import `javax.swing` or `java.awt`. Sw
 `MainPresenter.onNew()` and `onOpen()` ask `view.confirmDiscardChanges()` first whenever the current group has any
 member or expense (there is no dirty flag). The Expenses tab has a "Remove selected" button, which calls
 `onRemoveSelected`. The Undo menu item is labelled to show that it covers expenses only.
+Because a presenter needs its view in its constructor, `MembersPanel` and `MainFrame` receive their presenter afterwards
+through `setPresenter(...)`; `App` creates the views, then the presenters, then connects them and calls `start()`.
+Menu: File (New, Open, Save) and Edit (Undo expense change, Ctrl+Z, disabled when there is nothing to undo).
+Save adds `.csv` when the file name has no extension and asks before replacing an existing file.
 
 ## 5. PlantUML class diagram
 NOTE: the diagram below has not been updated for the decisions in section 6. A teammate will redraw it; see section 8.
