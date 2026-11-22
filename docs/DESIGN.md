@@ -203,7 +203,7 @@ arithmetic and are called by `ExpenseServiceImpl`; they are not part of the publ
 - Undo covers expense add and expense remove only (`AddExpenseCommand`, `RemoveExpenseCommand`). There is no undo
   for member changes and no Redo.
 - The service allocates the expense id (`Group.allocateExpenseId()`), builds the `Expense`, and hands it to the command.
-- When removing a member, need clear undo history (R2).
+- Removing a member will clear undo history (R2).
 - `Command` has `execute()` and `undo()`. `CommandHistory` has `run(Command)`, `undo()`, `canUndo()` and `clear()`;
   `run` remembers a command only after it executed successfully. The commands are
   `AddExpenseCommand(Group, Expense)` and `RemoveExpenseCommand(Group, int expenseId)`.
@@ -216,7 +216,7 @@ void save(Group g, Path file) throws StorageException
 Group load(Path file) throws StorageException
 ```
 The format is CSV with no third-party library. It stores the group name, the next expense id, the members and
-the computed shares of each expense (not the original inputs). Proposed layout:
+the computed shares of each expense (not the original inputs). Layout(implemented by FileRepository):
 ```
 EXPENSE_SPLITTER,1                              <- format-version marker (first line)
 GROUP,<name>
@@ -230,6 +230,13 @@ SHARE,<expenseId>,<member>,<cents>
 - An empty file, a wrong version, an unknown record type, a bad number or an inconsistent file (for example shares
   that do not sum to the total, or an unknown member) throws `StorageException`.
 - `load` restores the next expense id with `Group.restoreNextExpenseId`.
+- The file is always read and written as UTF-8. A UTF-8 byte order mark at the start is ignored; blank lines are skipped.
+- The first three records must be the version marker, `GROUP` and `NEXT_ID`, in this order. `MEMBER`, `EXPENSE` and
+  `SHARE` follow in any order, but a `SHARE` must come after its `EXPENSE`.
+- A duplicate expense id, or two shares of one expense for the same member, is an error.
+- `save` writes a temporary file in the same folder and then moves it over the target, so a failed save does not
+  destroy an existing file.
+- Every error message contains the file path and, where it applies, the line number.
 
 ### 4.4 `gui` package (MVP)
 The gui package uses MVP. It may depend on `service`, `model` and `exception`: `ExpenseService` exposes the model
