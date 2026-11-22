@@ -230,7 +230,9 @@ SHARE,<expenseId>,<member>,<cents>
 - An empty file, a wrong version, an unknown record type, a bad number or an inconsistent file (for example shares
   that do not sum to the total, or an unknown member) throws `StorageException`.
 - `load` restores the next expense id with `Group.restoreNextExpenseId`.
-- The file is always read and written as UTF-8. A UTF-8 byte order mark at the start is ignored; blank lines are skipped.
+- The file is always read and written as UTF-8. `save` starts the file with a UTF-8 byte order mark, because Excel shows
+  non-ASCII names (for example Chinese) as garbage without it; `load` ignores the mark if it is present, so files
+  without it can still be opened. Blank lines are skipped.
 - The first three records must be the version marker, `GROUP` and `NEXT_ID`, in this order. `MEMBER`, `EXPENSE` and
   `SHARE` follow in any order, but a `SHARE` must come after its `EXPENSE`.
 - A duplicate expense id, or two shares of one expense for the same member, is an error.
