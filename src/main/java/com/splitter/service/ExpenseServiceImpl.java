@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /** Default {@link ExpenseService}: one group at a time, undo for expense add/remove only. */
-@AIGenerated(tool = "Claude Code", prompt = "P05")
+@AIGenerated(tool = "Claude Code", prompt = "P05", refinedBy = "Wang Man Nga", changes = "removeMember() clear undo history so undo will not fail after removing a member.")
 public class ExpenseServiceImpl implements ExpenseService {
 
     private static final String DEFAULT_GROUP_NAME = "New Group";
@@ -63,6 +63,7 @@ public class ExpenseServiceImpl implements ExpenseService {
     @Override
     public void removeMember(Member m) {
         group.removeMember(m);
+        history.clear(); 
         fireDataChanged();
     }
 
