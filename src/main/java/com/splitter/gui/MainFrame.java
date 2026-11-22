@@ -8,15 +8,12 @@ import java.nio.file.Path;
 import java.util.Optional;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 import javax.swing.KeyStroke;
-import javax.swing.SwingConstants;
 import javax.swing.WindowConstants;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
@@ -24,7 +21,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
  * The main window: four tabs and a menu with New, Open, Save and Undo. It only collects input and shows
  * dialogs; every decision is made by the {@link MainPresenter}.
  */
-@AIGenerated(tool = "Claude Code", prompt = "P07, P08")
+@AIGenerated(tool = "Claude Code", prompt = "P07, P08, P09")
 public class MainFrame extends JFrame implements MainView {
 
     private static final long serialVersionUID = 1L;
@@ -33,15 +30,16 @@ public class MainFrame extends JFrame implements MainView {
     private final JMenuItem undoItem = new JMenuItem("Undo expense change");
     private MainPresenter presenter;
 
-    public MainFrame(MembersPanel membersPanel, ExpensesPanel expensesPanel) {
+    public MainFrame(MembersPanel membersPanel, ExpensesPanel expensesPanel, BalancesPanel balancesPanel,
+                     SettleUpPanel settleUpPanel) {
         super(TITLE);
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
         JTabbedPane tabs = new JTabbedPane();
         tabs.addTab("Members", membersPanel);
         tabs.addTab("Expenses", expensesPanel);
-        tabs.addTab("Balances", placeholder("Balances: coming in the next step"));
-        tabs.addTab("Settle Up", placeholder("Settle Up: coming in the next step"));
+        tabs.addTab("Balances", balancesPanel);
+        tabs.addTab("Settle Up", settleUpPanel);
         add(tabs);
 
         setJMenuBar(createMenuBar());
@@ -52,12 +50,6 @@ public class MainFrame extends JFrame implements MainView {
     /** Connects the presenter. It is a setter because the presenter needs this view in its constructor. */
     public void setPresenter(MainPresenter presenter) {
         this.presenter = presenter;
-    }
-
-    private static JPanel placeholder(String text) {
-        JPanel panel = new JPanel(new java.awt.BorderLayout());
-        panel.add(new JLabel(text, SwingConstants.CENTER), java.awt.BorderLayout.CENTER);
-        return panel;
     }
 
     private JMenuBar createMenuBar() {
