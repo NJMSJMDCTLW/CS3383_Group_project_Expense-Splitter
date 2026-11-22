@@ -39,9 +39,11 @@ import java.util.Objects;
  * Fields that contain a comma, a quote or a line break are put in double quotes, and a quote inside a
  * quoted field is written twice.
  */
-@AIGenerated(tool = "Claude Code", prompt = "P06", refinedBy = "Wang Man Nga", changes = "replaced a invisible whitespace character with a unicode escape sequence in line 325, so that the code is more readable.")
+@AIGenerated(tool = "Claude Code", prompt = "P06", refinedBy = "Wang Man Nga", changes = "Replaced invisible BOM literal with an escape; save() now writes a UTF-8 BOM so Excel shows non-ASCII names correctly (Issue #2)")
 public class FileRepository implements Repository {
 
+    /** Excel needs to recognise a CSV file as UTF-8. */
+    private static final String BOM = "\uFEFF";
     private static final String MARKER = "EXPENSE_SPLITTER";
     private static final String VERSION = "1";
 
@@ -89,7 +91,7 @@ public class FileRepository implements Repository {
         try {
             // Write a temporary file first, so a failed save never leaves a half-written file behind.
             temp = Files.createTempFile(dir, "expense-splitter-", ".tmp");
-            Files.writeString(temp, content, StandardCharsets.UTF_8);
+            Files.writeString(temp, BOM + content, StandardCharsets.UTF_8);
             try {
                 Files.move(temp, target, StandardCopyOption.ATOMIC_MOVE);
             } catch (AtomicMoveNotSupportedException e) {
@@ -325,7 +327,7 @@ public class FileRepository implements Repository {
         List<Rec> recs = new ArrayList<>();
         for (int i = 0; i < lines.size(); i++) {
             String line = lines.get(i);
-            if (i == 0 && line.startsWith("\uFEFF")) {
+            if (i == 0 && line.startsWith(BOM)) {
                 line = line.substring(1);
             }
             if (line.isBlank()) {
