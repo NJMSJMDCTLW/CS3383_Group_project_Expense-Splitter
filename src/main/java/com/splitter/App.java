@@ -1,6 +1,8 @@
 package com.splitter;
 
 import com.splitter.command.CommandHistory;
+import com.splitter.gui.ExpensesPanel;
+import com.splitter.gui.ExpensesPresenter;
 import com.splitter.gui.MainFrame;
 import com.splitter.gui.MainPresenter;
 import com.splitter.gui.MembersPanel;
@@ -12,7 +14,7 @@ import com.splitter.storage.FileRepository;
 import javax.swing.SwingUtilities;
 
 /** Application entry point: wires the service, the presenters and the views, then shows the window. */
-@AIGenerated(tool = "Claude Code", prompt = "P01, P07")
+@AIGenerated(tool = "Claude Code", prompt = "P01, P07, P08")
 public final class App {
 
     private App() {
@@ -23,14 +25,18 @@ public final class App {
             ExpenseService service = new ExpenseServiceImpl(new FileRepository(), new CommandHistory());
 
             MembersPanel membersPanel = new MembersPanel();
-            MainFrame frame = new MainFrame(membersPanel);
+            ExpensesPanel expensesPanel = new ExpensesPanel();
+            MainFrame frame = new MainFrame(membersPanel, expensesPanel);
 
             MembersPresenter membersPresenter = new MembersPresenter(service, membersPanel);
+            ExpensesPresenter expensesPresenter = new ExpensesPresenter(service, expensesPanel);
             MainPresenter mainPresenter = new MainPresenter(service, frame);
             membersPanel.setPresenter(membersPresenter);
+            expensesPanel.setPresenter(expensesPresenter);
             frame.setPresenter(mainPresenter);
 
             membersPresenter.start();
+            expensesPresenter.start();
             mainPresenter.start();
             frame.setVisible(true);
         });

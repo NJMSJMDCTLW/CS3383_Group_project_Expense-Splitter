@@ -24,7 +24,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
  * The main window: four tabs and a menu with New, Open, Save and Undo. It only collects input and shows
  * dialogs; every decision is made by the {@link MainPresenter}.
  */
-@AIGenerated(tool = "Claude Code", prompt = "P07")
+@AIGenerated(tool = "Claude Code", prompt = "P07, P08")
 public class MainFrame extends JFrame implements MainView {
 
     private static final long serialVersionUID = 1L;
@@ -33,13 +33,13 @@ public class MainFrame extends JFrame implements MainView {
     private final JMenuItem undoItem = new JMenuItem("Undo expense change");
     private MainPresenter presenter;
 
-    public MainFrame(MembersPanel membersPanel) {
+    public MainFrame(MembersPanel membersPanel, ExpensesPanel expensesPanel) {
         super(TITLE);
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
         JTabbedPane tabs = new JTabbedPane();
         tabs.addTab("Members", membersPanel);
-        tabs.addTab("Expenses", placeholder("Expenses: coming in the next step"));
+        tabs.addTab("Expenses", expensesPanel);
         tabs.addTab("Balances", placeholder("Balances: coming in the next step"));
         tabs.addTab("Settle Up", placeholder("Settle Up: coming in the next step"));
         add(tabs);
