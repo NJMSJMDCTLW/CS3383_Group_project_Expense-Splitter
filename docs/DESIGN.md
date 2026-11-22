@@ -203,6 +203,12 @@ arithmetic and are called by `ExpenseServiceImpl`; they are not part of the publ
 - Undo covers expense add and expense remove only (`AddExpenseCommand`, `RemoveExpenseCommand`). There is no undo
   for member changes and no Redo.
 - The service allocates the expense id (`Group.allocateExpenseId()`), builds the `Expense`, and hands it to the command.
+- When removing a member, need clear undo history (R2).
+- `Command` has `execute()` and `undo()`. `CommandHistory` has `run(Command)`, `undo()`, `canUndo()` and `clear()`;
+  `run` remembers a command only after it executed successfully. The commands are
+  `AddExpenseCommand(Group, Expense)` and `RemoveExpenseCommand(Group, int expenseId)`.
+- A new `ExpenseServiceImpl` starts with an empty group named "New Group".
+- Adding the same listener twice has no effect; listeners are notified from a copy of the list; `save` does not notify.
 
 ### 4.3 `storage.Repository`
 ```
@@ -433,12 +439,10 @@ Decisions agreed with the analysis/docs member on 2026-11-21 (reported by the de
 | N3 | Settle-up only suggests transfers. Payments are not recorded; after people pay, the user starts a New group. |
 | N4 | The Expenses tab has a "Remove selected" button (calls `removeExpense`, undoable). |
 | N5 | No date field on expenses. |
+| R1 | `SHARES` weights are non-negative and have at most 2 decimal places, the same as percentages; at least one weight must be greater than zero. Decided by the developer after reviewing P03 (2026-11-21); to be confirmed with the analyst. |
+| R2 | Removing a member clears the undo history (member changes themselves are not undoable), so an undo can never fail because a payer or participant is gone. Decided by the developer after reviewing P05 (2026-11-21); to be confirmed with the analyst. |
 
 ### 6.1 Unresolved points (for the team)
-- **Undo of a removed expense after its member was removed.** Q1 blocks removing a member only while an expense
-  uses that member. Sequence: add expense E (payer A); remove E; remove member A (allowed, E no longer exists);
-  undo. Undoing `RemoveExpenseCommand` calls `Group.addExpense(E)`, which must reject E because A is no longer a
-  member. The undo then fails with a `ValidationException`. The design does not yet say what should happen.
 - **Group name rules.** The decisions give name rules only for members. The text above uses "not blank, no line
   breaks" for the group name, so that CSV stays one record per line. No length limit is set.
 - **Description rules.** Only "no line breaks" is required (Q7). No length limit is set.
