@@ -13,7 +13,7 @@ import java.lang.annotation.Target;
  * {@code refinedBy} and {@code changes} are filled in by a human when the code is later edited.
  */
 @Documented
-@Retention(RetentionPolicy.RUNTIME)
+@Retention(RetentionPolicy.SOURCE)
 @Target({ElementType.TYPE, ElementType.METHOD, ElementType.CONSTRUCTOR})
 public @interface AIGenerated {
 
