@@ -3,7 +3,9 @@ package com.splitter.gui;
 import com.splitter.meta.AIGenerated;
 import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
+import java.io.File;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.Optional;
 import javax.swing.JFileChooser;
@@ -21,7 +23,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
  * The main window: four tabs and a menu with New, Open, Save and Undo. It only collects input and shows
  * dialogs; every decision is made by the {@link MainPresenter}.
  */
-@AIGenerated(tool = "Claude Code", prompt = "P07, P08, P09")
+@AIGenerated(tool = "Claude Code", prompt = "P07, P08, P09", refinedBy = "Wang Man Nga", changes = "Fix #3: catch InvalidPathException in file choosers.")
 public class MainFrame extends JFrame implements MainView {
 
     private static final long serialVersionUID = 1L;
@@ -130,7 +132,7 @@ public class MainFrame extends JFrame implements MainView {
         if (chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) {
             return Optional.empty();
         }
-        return Optional.of(chooser.getSelectedFile().toPath());
+        return toPath(chooser.getSelectedFile());
     }
 
     @Override
@@ -139,7 +141,11 @@ public class MainFrame extends JFrame implements MainView {
         if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) {
             return Optional.empty();
         }
-        Path path = chooser.getSelectedFile().toPath();
+        Optional<Path> chosen = toPath(chooser.getSelectedFile());
+        if (chosen.isEmpty()) {
+            return Optional.empty();
+        }
+        Path path = chosen.get();
         String fileName = path.getFileName().toString();
         if (fileName.indexOf('.') < 0) {
             path = path.resolveSibling(fileName + ".csv");
@@ -153,6 +159,15 @@ public class MainFrame extends JFrame implements MainView {
             }
         }
         return Optional.of(path);
+    }
+
+    private Optional<Path> toPath(File file) {
+    try {
+        return Optional.of(file.toPath());
+    } catch (InvalidPathException e) {
+        showError("The file name is not valid: " + file.getName());
+        return Optional.empty();
+    }
     }
 
     private static JFileChooser createChooser() {
