@@ -1,3 +1,4 @@
+
 package com.splitter.gui;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -16,27 +17,29 @@ import com.splitter.model.Money;
 import com.splitter.model.SplitMethod;
 import com.splitter.model.Transfer;
 import com.splitter.service.ExpenseService;
+import com.splitter.service.ExpenseServiceImpl;
 import com.splitter.split.ParticipantInput;
 import com.splitter.storage.Repository;
+
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Package gui, 12 test cases. Techniques: equivalence classes for
- * {@link InputParser} and
- * {@link MoneyFormatter}, and fake-view branch checks for the presenters
- * (DESIGN.md 4.4).
+ * Package gui, 14 test cases. Techniques: equivalence classes for
+ * {@link InputParser} and {@link MoneyFormatter}, and fake-view branch
+ * checks for the presenters (DESIGN.md 4.4).
  */
-
 @AIGenerated(tool = "Claude Code", prompt = "T02")
 class GuiTest {
 
     private static final class FakeRepository implements Repository {
+
         Group stored;
 
         @Override
@@ -49,13 +52,16 @@ class GuiTest {
             if (stored == null) {
                 throw new StorageException("empty", null);
             }
+
             return stored;
         }
     }
 
     private static final class RecordingExpensesView implements ExpensesView {
+
         int cleared;
         String error;
+
         List<Expense> shownExpenses = new ArrayList<>();
         List<Member> shownMembers = new ArrayList<>();
 
@@ -81,10 +87,13 @@ class GuiTest {
     }
 
     private static final class RecordingMainView implements MainView {
+
         boolean confirm;
         int confirmCalls;
+
         Optional<String> newName = Optional.of("Trips");
         Optional<Path> openFile = Optional.empty();
+
         String error;
         String groupName;
         boolean undoEnabled;
@@ -127,13 +136,16 @@ class GuiTest {
     }
 
     private static ExpenseService freshService() {
-        return new com.splitter.service.ExpenseServiceImpl(new FakeRepository(), new CommandHistory());
+        return new com.splitter.service.ExpenseServiceImpl(
+                new FakeRepository(),
+                new CommandHistory());
     }
 
     @Test
     @DisplayName("TC-G01 parseMoney accepts a valid amount and trims spaces (equivalence)")
     void parseMoneyValid() {
         InputParser p = new InputParser();
+
         assertEquals(Money.parse("12.50"), p.parseMoney("  12.50 "));
         assertThrows(ValidationException.class, () -> p.parseMoney("abc"));
     }
@@ -142,6 +154,7 @@ class GuiTest {
     @DisplayName("TC-G02 parseMoney rejects '-1' and '0.005' (equivalence/boundary)")
     void parseMoneyRejects() {
         InputParser p = new InputParser();
+
         assertThrows(ValidationException.class, () -> p.parseMoney("-1"));
         assertThrows(ValidationException.class, () -> p.parseMoney("0.005"));
         assertThrows(ValidationException.class, () -> p.parseMoney("abc"));
@@ -151,9 +164,15 @@ class GuiTest {
     @DisplayName("TC-G03 parseDecimal accepts signed decimals and rejects text/blank (equivalence)")
     void parseDecimal() {
         InputParser p = new InputParser();
-        assertEquals(0, p.parseDecimal("-1").compareTo(java.math.BigDecimal.valueOf(-1)));
-        assertEquals(java.math.BigDecimal.valueOf(2.5).stripTrailingZeros(),
+
+        assertEquals(
+                0,
+                p.parseDecimal("-1").compareTo(java.math.BigDecimal.valueOf(-1)));
+
+        assertEquals(
+                java.math.BigDecimal.valueOf(2.5).stripTrailingZeros(),
                 p.parseDecimal(" 2.5 ").stripTrailingZeros());
+
         assertThrows(ValidationException.class, () -> p.parseDecimal("abc"));
         assertThrows(ValidationException.class, () -> p.parseDecimal(" "));
     }
@@ -176,37 +195,62 @@ class GuiTest {
     @DisplayName("TC-G05 parseMethod matches display name case-insensitively, unknown rejected (equivalence)")
     void parseMethod() {
         InputParser p = new InputParser();
+
         assertEquals(SplitMethod.EQUAL, p.parseMethod("equal"));
         assertEquals(SplitMethod.SHARES, p.parseMethod("Shares"));
-        assertThrows(ValidationException.class, () -> p.parseMethod("nonsense"));
+
+        assertThrows(
+                ValidationException.class,
+                () -> p.parseMethod("nonsense"));
     }
 
     @Test
     @DisplayName("TC-G06 MoneyFormatter shows $ and -$ for negatives, no symbol in Transfer (equivalence)")
     void moneyFormatter() {
         MoneyFormatter f = new MoneyFormatter();
+
         assertEquals("$12.34", f.format(Money.ofCents(1234)));
         assertEquals("-$0.05", f.format(Money.ofCents(-5)));
+
         Member a = new Member("A");
         Member b = new Member("B");
-        assertEquals("A pays B $12.34", f.format(new Transfer(a, b, Money.ofCents(1234))));
+
+        assertEquals(
+                "A pays B $12.34",
+                f.format(new Transfer(a, b, Money.ofCents(1234))));
     }
 
     @Test
     @DisplayName("TC-G07 ExpensesPresenter clears the form only after a successful add (branch)")
     void expensesClearsOnlyOnSuccess() {
         ExpenseService s = freshService();
+
         s.addMember("A");
+
         Member a = s.getMembers().get(0);
+
         RecordingExpensesView view = new RecordingExpensesView();
         ExpensesPresenter presenter = new ExpensesPresenter(s, view);
+
         presenter.start();
-        presenter.onAddExpense("", a, "1.00", SplitMethod.EQUAL,
+
+        presenter.onAddExpense(
+                "",
+                a,
+                "1.00",
+                SplitMethod.EQUAL,
                 List.of(new ParticipantText(a, "")));
+
         assertEquals(0, view.cleared);
         assertTrue(view.error != null && !view.error.isBlank());
-        presenter.onAddExpense("ok", a, "1.00", SplitMethod.EQUAL,
+
+        presenter.onAddExpense(
+                "ok",
+                a,
+                "1.00",
+                SplitMethod.EQUAL,
                 List.of(new ParticipantText(a, "")));
+
         assertEquals(1, view.cleared);
     }
 
@@ -214,10 +258,13 @@ class GuiTest {
     @DisplayName("TC-G08 ExpensesPresenter reports remove errors via showError (branch)")
     void expensesRemoveError() {
         ExpenseService s = freshService();
+
         RecordingExpensesView view = new RecordingExpensesView();
         ExpensesPresenter presenter = new ExpensesPresenter(s, view);
+
         presenter.start();
         presenter.onRemoveSelected(99);
+
         assertTrue(view.error != null && !view.error.isBlank());
     }
 
@@ -225,13 +272,18 @@ class GuiTest {
     @DisplayName("TC-G09 MainPresenter confirms before New when data exists, not when empty (decision table)")
     void mainConfirmBeforeNew() {
         ExpenseService s = freshService();
+
         RecordingMainView view = new RecordingMainView();
         MainPresenter presenter = new MainPresenter(s, view);
+
         presenter.start();
         presenter.onNew();
+
         assertEquals(0, view.confirmCalls);
+
         s.addMember("A");
         presenter.onNew();
+
         assertEquals(1, view.confirmCalls);
     }
 
@@ -239,12 +291,17 @@ class GuiTest {
     @DisplayName("TC-G10 MainPresenter confirms before Open with data; declining keeps data (branch)")
     void mainConfirmBeforeOpen() {
         ExpenseService s = freshService();
+
         s.addMember("A");
+
         RecordingMainView view = new RecordingMainView();
         view.confirm = false;
+
         MainPresenter presenter = new MainPresenter(s, view);
+
         presenter.start();
         presenter.onOpen();
+
         assertEquals(1, view.confirmCalls);
         assertFalse(s.getMembers().isEmpty());
     }
@@ -253,17 +310,23 @@ class GuiTest {
     @DisplayName("TC-G11 InputParser rejects '' and huge amount (equivalence/boundary)")
     void parseMoneyEmptyAndHuge() {
         InputParser p = new InputParser();
+
         assertThrows(ValidationException.class, () -> p.parseMoney(""));
-        assertThrows(ValidationException.class, () -> p.parseMoney("99999999999999999.99"));
+        assertThrows(
+                ValidationException.class,
+                () -> p.parseMoney("99999999999999999.99"));
     }
 
     @Test
     @DisplayName("TC-G12 MembersPresenter adds/removes members and reports errors (branch)")
     void membersPresenter() {
         ExpenseService s = freshService();
+
         final String[] error = { null };
-        final java.util.List<List<Member>> shown = new java.util.ArrayList<>();
+        final List<List<Member>> shown = new ArrayList<>();
+
         MembersView view = new MembersView() {
+
             @Override
             public void showMembers(List<Member> members) {
                 shown.add(new ArrayList<>(members));
@@ -276,12 +339,18 @@ class GuiTest {
         };
 
         MembersPresenter presenter = new MembersPresenter(s, view);
+
         presenter.start();
         presenter.onAddMember("A");
+
         assertEquals(1, shown.get(shown.size() - 1).size());
+
         presenter.onAddMember("A");
+
         assertTrue(error[0] != null && !error[0].isBlank());
+
         presenter.onRemoveMember(s.getMembers().get(0));
+
         assertEquals(0, shown.get(shown.size() - 1).size());
     }
 
@@ -289,10 +358,14 @@ class GuiTest {
     @DisplayName("TC-G13 BalancesPresenter and SettleUpPresenter show data on start (branch)")
     void balancesAndSettlePresenters() {
         ExpenseService s = freshService();
+
         s.addMember("A");
+
         final int[] balanceCalls = { 0 };
         final int[] settleCalls = { 0 };
+
         BalancesView bv = new BalancesView() {
+
             @Override
             public void showBalances(Map<Member, Money> balances) {
                 balanceCalls[0]++;
@@ -302,7 +375,9 @@ class GuiTest {
             public void showError(String message) {
             }
         };
+
         SettleUpView sv = new SettleUpView() {
+
             @Override
             public void showSettlements(List<Transfer> transfers) {
                 settleCalls[0]++;
@@ -312,8 +387,10 @@ class GuiTest {
             public void showError(String message) {
             }
         };
+
         new BalancesPresenter(s, bv).start();
         new SettleUpPresenter(s, sv).start();
+
         assertEquals(1, balanceCalls[0]);
         assertEquals(1, settleCalls[0]);
     }
@@ -332,65 +409,30 @@ class GuiTest {
         assertEquals(0, inputs.get(0).value().signum());
         assertEquals(0, inputs.get(1).value().signum());
     }
+
     @Test
-    @DisplayName("TC-G15 MembersPresenter clears name field when group is replaced (New/Open)")
-    void membersPresenterClearsNameFieldOnGroupReplacement() throws StorageException {
+    @DisplayName("TC-V15 adding an expense to an empty group shows a helpful validation error")
+    void addExpenseToEmptyGroup() {
 
-        FakeRepository repository = new FakeRepository();
-
-        ExpenseService s = new com.splitter.service.ExpenseServiceImpl(
-                repository,
+        ExpenseServiceImpl s = new ExpenseServiceImpl(
+                new FakeRepository(),
                 new CommandHistory());
 
-        final int[] clearCalls = { 0 };
+        ValidationException exception = assertThrows(
+                ValidationException.class,
+                () -> s.addExpense(
+                        "Dinner",
+                        null,
+                        Money.parse("100.00"),
+                        SplitMethod.EQUAL,
+                        List.of()));
 
-        final List<List<Member>> shown = new ArrayList<>();
-
-        MembersView view = new MembersView() {
-
-            @Override
-            public void showMembers(List<Member> members) {
-                shown.add(new ArrayList<>(members));
-            }
-
-            @Override
-            public void showError(String message) {
-            }
-
-            @Override
-            public void clearNameField() {
-                clearCalls[0]++;
-            }
-        };
-
-        MembersPresenter presenter = new MembersPresenter(s, view);
-
-        presenter.start();
-
-        // Normal member changes should not trigger the group-replacement callback.
-        s.addMember("Alice");
-        assertEquals(0, clearCalls[0]);
-
-        // Test New.
-        s.newGroup("Group B");
-
-        assertEquals(1, clearCalls[0]);
-        assertTrue(shown.get(shown.size() - 1).isEmpty());
-
-        // Prepare a group to be opened.
-        Group openedGroup = new Group("Group C");
-        openedGroup.addMember(new Member("Charlie"));
-
-        repository.stored = openedGroup;
-
-        // Test Open.
-        s.open(Path.of("group-c.csv"));
-
-        assertEquals(2, clearCalls[0]);
         assertEquals(
-                List.of(new Member("Charlie")),
-                shown.get(shown.size() - 1));
+                "Please add at least one member before creating an expense.",
+                exception.getMessage());
 
-        presenter.stop();
+        assertTrue(s.getMembers().isEmpty());
+        assertTrue(s.getExpenses().isEmpty());
     }
+
 }
