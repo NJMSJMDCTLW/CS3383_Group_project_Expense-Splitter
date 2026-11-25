@@ -13,9 +13,9 @@ import java.util.List;
 /** Presenter of the Expenses tab. Contains no Swing code. */
 @AIGenerated(
     tool = "Claude Code",
-    prompt = "P08",
+    prompt = "P08", 
     refinedBy = "Dora",
-    changes = "Fix #6: pass split method to InputParser for participant validation."
+    changes = "Fix #6: pass split method to InputParser for participant validation; Fix #7: clear the form when the group is replaced."
 )
 public class ExpensesPresenter implements ServiceListener {
 
