@@ -28,8 +28,7 @@ import java.util.Objects;
  * add/remove only.
  */
 @AIGenerated(tool = "Claude Code", prompt = "P05", refinedBy = "Wang Man Nga, Dora", changes = "removeMember() clears undo history so undo will not fail after removing a member; "
-        + "Fix #7: notify listeners with onGroupReplaced on New/Open; "
-        + "Fix #9: check for an empty group before validating the payer.")
+        + "Fix #7: notify listeners with onGroupReplaced on New/Open.")
 public class ExpenseServiceImpl implements ExpenseService {
 
     private static final String DEFAULT_GROUP_NAME = "New Group";

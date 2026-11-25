@@ -151,6 +151,7 @@ depends on the strategy (see decision record D6).
 ### 4.1 `ServiceListener` (Observer)
 ```
 void onDataChanged()
+void onGroupReplaced()
 ```
 It is called after any successful change: a member added or removed, an expense added or removed, undo, new, or open. It is not called when a call fails validation. Listeners (the presenters, section 4.4) re-read state through the service.
 
@@ -358,7 +359,10 @@ package "storage" {
   class FileRepository
 }
 package "service" {
-  interface ServiceListener { +onDataChanged() }
+  interface ServiceListener {
+    +onDataChanged()
+    +onGroupReplaced()
+}
   interface ExpenseService {
     +addListener(ServiceListener)
     +removeListener(ServiceListener)

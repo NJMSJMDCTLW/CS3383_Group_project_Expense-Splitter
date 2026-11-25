@@ -435,4 +435,44 @@ class GuiTest {
         assertTrue(s.getExpenses().isEmpty());
     }
 
+    @Test
+    @DisplayName("TC-G16 ExpensesPresenter clears the form when group is replaced (New/Open)")
+    void expensesPresenterClearsFormOnGroupReplacement() throws StorageException {
+
+        FakeRepository repository = new FakeRepository();
+
+        ExpenseService s = new com.splitter.service.ExpenseServiceImpl(
+                repository,
+                new CommandHistory());
+
+        RecordingExpensesView view = new RecordingExpensesView();
+        ExpensesPresenter presenter = new ExpensesPresenter(s, view);
+
+        presenter.start();
+
+        // Normal member changes should not clear the expense form.
+        s.addMember("Alice");
+        assertEquals(0, view.cleared);
+
+        // Test New.
+        s.newGroup("Group B");
+        assertEquals(1, view.cleared);
+
+        // Prepare a group to be opened.
+        Group openedGroup = new Group("Group C");
+        openedGroup.addMember(new Member("Charlie"));
+
+        repository.stored = openedGroup;
+
+        // Test Open.
+        s.open(Path.of("group-c.csv"));
+
+        assertEquals(2, view.cleared);
+        assertEquals(
+                List.of(new Member("Charlie")),
+                view.shownMembers);
+
+        presenter.stop();
+    }
+
 }
