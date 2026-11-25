@@ -27,12 +27,9 @@ import java.util.Objects;
  * Default {@link ExpenseService}: one group at a time, undo for expense
  * add/remove only.
  */
-@AIGenerated(
-    tool = "Claude Code", 
-    prompt = "P05", 
-    refinedBy = "Wang Man Nga, Dora", 
-    changes = "removeMember() clear undo history so undo will not fail after removing a member; Fix #7: notify listeners with onGroupReplaced on New/Open."
-)
+@AIGenerated(tool = "Claude Code", prompt = "P05", refinedBy = "Wang Man Nga, Dora", changes = "removeMember() clears undo history so undo will not fail after removing a member; "
+        + "Fix #7: notify listeners with onGroupReplaced on New/Open; "
+        + "Fix #9: check for an empty group before validating the payer.")
 public class ExpenseServiceImpl implements ExpenseService {
 
     private static final String DEFAULT_GROUP_NAME = "New Group";
@@ -83,33 +80,54 @@ public class ExpenseServiceImpl implements ExpenseService {
     @Override
     public Expense addExpense(String description, Member payer, Money amount, SplitMethod method,
             List<ParticipantInput> inputs) {
+
+        // F15: Check whether the group has members before validating the payer.
+        if (group.getMembers().isEmpty()) {
+            throw new ValidationException(
+                    "Please add at least one member before creating an expense.");
+        }
+
         if (payer == null || !group.hasMember(payer)) {
             throw new ValidationException("The payer is not in the group.");
         }
+
         if (amount == null || amount.signum() <= 0) {
             throw new ValidationException("Amount must be greater than zero.");
         }
+
         if (amount.cents() > Expense.MAX_TOTAL_CENTS) {
             throw new ValidationException("Amount must not be more than 1000000.00.");
         }
+
         if (inputs == null) {
             throw new ValidationException("At least one participant is required.");
         }
+
         for (ParticipantInput input : inputs) {
             if (input != null && !group.hasMember(input.member())) {
-                throw new ValidationException("The participant \"" + input.member().getName()
-                        + "\" is not in the group.");
+                throw new ValidationException(
+                        "The participant \"" + input.member().getName()
+                                + "\" is not in the group.");
             }
         }
+
         SplitStrategy strategy = SplitStrategyFactory.forMethod(method);
         Map<Member, Money> shares = strategy.split(amount, inputs);
-        // Validates the description (and everything else) before an id is used up. The
-        // id is irrelevant here.
+
+        // Validate the description and other expense details before allocating an ID.
         new Expense(1, description, payer, amount, method, shares);
 
-        Expense expense = new Expense(group.allocateExpenseId(), description, payer, amount, method, shares);
+        Expense expense = new Expense(
+                group.allocateExpenseId(),
+                description,
+                payer,
+                amount,
+                method,
+                shares);
+
         history.run(new AddExpenseCommand(group, expense));
         fireDataChanged();
+
         return expense;
     }
 

@@ -27,13 +27,18 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Package service, 10 test cases. Techniques: canonical scenarios from the rules, state-based id and undo
- * behaviour, and observer branch checks. Uses the package-private helper classes and a fake Repository.
+ * Package service, 10 test cases. Techniques: canonical scenarios from the
+ * rules, state-based id and undo
+ * behaviour, and observer branch checks. Uses the package-private helper
+ * classes and a fake Repository.
  */
-@AIGenerated(tool = "Claude Code", prompt = "T02")
+@AIGenerated(tool = "Claude Code", prompt = "T02", refinedBy = "Dora", changes = "Fix #9: test the validation message when adding an expense to an empty group.")
 class ServiceTest {
 
-    /** Minimal in-memory Repository so the service can be tested without the file layer. */
+    /**
+     * Minimal in-memory Repository so the service can be tested without the file
+     * layer.
+     */
     private static final class FakeRepository implements Repository {
         Group stored;
 
@@ -70,7 +75,8 @@ class ServiceTest {
         s.addMember("C");
         Member a = s.getMembers().get(0);
         s.addExpense("x", a, Money.ofCents(90), SplitMethod.EQUAL,
-                List.of(in(s.getMembers().get(0), "0"), in(s.getMembers().get(1), "0"), in(s.getMembers().get(2), "0")));
+                List.of(in(s.getMembers().get(0), "0"), in(s.getMembers().get(1), "0"),
+                        in(s.getMembers().get(2), "0")));
         Map<Member, Money> bal = s.getBalances();
         assertEquals(Money.ofCents(60), bal.get(a));
         long sum = bal.values().stream().mapToLong(Money::cents).sum();
@@ -256,4 +262,30 @@ class ServiceTest {
         s.addMember("A");
         assertEquals(1, calls.get());
     }
+
+    @Test
+    @DisplayName("TC-V15 adding an expense to an empty group shows a helpful validation error")
+    void addExpenseToEmptyGroup() {
+
+        ExpenseServiceImpl s = new ExpenseServiceImpl(
+                new FakeRepository(),
+                new CommandHistory());
+
+        ValidationException exception = assertThrows(
+                ValidationException.class,
+                () -> s.addExpense(
+                        "Dinner",
+                        null,
+                        Money.parse("100.00"),
+                        SplitMethod.EQUAL,
+                        List.of()));
+
+        assertEquals(
+                "Please add at least one member before creating an expense.",
+                exception.getMessage());
+
+        assertTrue(s.getMembers().isEmpty());
+        assertTrue(s.getExpenses().isEmpty());
+    }
+
 }
