@@ -1,6 +1,7 @@
 package com.splitter.gui;
 
 import com.splitter.meta.AIGenerated;
+import java.awt.Dimension;
 import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
 import java.io.File;
@@ -23,7 +24,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
  * The main window: four tabs and a menu with New, Open, Save and Undo. It only collects input and shows
  * dialogs; every decision is made by the {@link MainPresenter}.
  */
-@AIGenerated(tool = "Claude Code", prompt = "P07, P08, P09", refinedBy = "Wang Man Nga", changes = "Fix #3: catch InvalidPathException in file choosers.")
+@AIGenerated(tool = "Claude Code", prompt = "P07, P08, P09", refinedBy = "Wang Man Nga", changes = "Fix #3: catch InvalidPathException in file choosers; Fix #14: minimum window size so the expense form is never clipped.")
 public class MainFrame extends JFrame implements MainView {
 
     private static final long serialVersionUID = 1L;
@@ -46,6 +47,7 @@ public class MainFrame extends JFrame implements MainView {
 
         setJMenuBar(createMenuBar());
         setSize(800, 600);
+        setMinimumSize(new Dimension(640, 480));
         setLocationRelativeTo(null);
     }
 

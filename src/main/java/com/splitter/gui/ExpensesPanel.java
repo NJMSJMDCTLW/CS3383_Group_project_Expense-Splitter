@@ -33,7 +33,7 @@ import javax.swing.table.DefaultTableModel;
  * The Expenses tab: a table of expenses and a form to add one. It only collects input and shows what the
  * presenter gives it; every decision is made by the {@link ExpensesPresenter}.
  */
-@AIGenerated(tool = "Claude Code", prompt = "P08")
+@AIGenerated(tool = "Claude Code", prompt = "P08", refinedBy = "Wang Man Nga", changes = "Fix #14: split the first form row into two rows so the split method box is visible at the default window size.")
 public class ExpensesPanel extends JPanel implements ExpensesView {
 
     private static final long serialVersionUID = 1L;
@@ -105,15 +105,18 @@ public class ExpensesPanel extends JPanel implements ExpensesView {
         });
         methodBox.addActionListener(e -> applyMethod());
 
+        //Two rows instead of one, so that every field fits in the default window (Issue #14).
         JPanel topRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 2));
         topRow.add(new JLabel("Description:"));
         topRow.add(descriptionField);
         topRow.add(new JLabel("Paid by:"));
         topRow.add(payerBox);
-        topRow.add(new JLabel("Amount:"));
-        topRow.add(amountField);
-        topRow.add(new JLabel("Split:"));
-        topRow.add(methodBox);
+        
+        JPanel amountRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 2));
+        amountRow.add(new JLabel("Amount:"));
+        amountRow.add(amountField);
+        amountRow.add(new JLabel("Split:"));
+        amountRow.add(methodBox);
 
         JPanel hintRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 2));
         hintRow.add(new JLabel("Participants:"));
@@ -132,6 +135,7 @@ public class ExpensesPanel extends JPanel implements ExpensesView {
         form.setLayout(new BoxLayout(form, BoxLayout.Y_AXIS));
         form.setBorder(BorderFactory.createTitledBorder("New expense"));
         form.add(topRow);
+        form.add(amountRow);
         form.add(hintRow);
         form.add(participantsScroll);
         form.add(addRow);
