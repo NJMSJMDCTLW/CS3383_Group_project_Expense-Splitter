@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.Locale;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -21,10 +22,13 @@ import javax.swing.WindowConstants;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 /**
- * The main window: four tabs and a menu with New, Open, Save and Undo. It only collects input and shows
+ * The main window: four tabs and a menu with New, Open, Save and Undo. It only
+ * collects input and shows
  * dialogs; every decision is made by the {@link MainPresenter}.
  */
-@AIGenerated(tool = "Claude Code", prompt = "P07, P08, P09", refinedBy = "Wang Man Nga", changes = "Fix #3: catch InvalidPathException in file choosers; Fix #14: minimum window size so the expense form is never clipped.")
+@AIGenerated(tool = "Claude Code", prompt = "P07, P08, P09", refinedBy = "Wang Man Nga, Dora", changes = "Fix #3: catch InvalidPathException in file choosers; "
+        + "Fix #14: minimum window size so the expense form is never clipped; "
+        + "Fix #10: append .csv when the filename does not already end with .csv.")
 public class MainFrame extends JFrame implements MainView {
 
     private static final long serialVersionUID = 1L;
@@ -34,7 +38,7 @@ public class MainFrame extends JFrame implements MainView {
     private MainPresenter presenter;
 
     public MainFrame(MembersPanel membersPanel, ExpensesPanel expensesPanel, BalancesPanel balancesPanel,
-                     SettleUpPanel settleUpPanel) {
+            SettleUpPanel settleUpPanel) {
         super(TITLE);
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
@@ -51,7 +55,10 @@ public class MainFrame extends JFrame implements MainView {
         setLocationRelativeTo(null);
     }
 
-    /** Connects the presenter. It is a setter because the presenter needs this view in its constructor. */
+    /**
+     * Connects the presenter. It is a setter because the presenter needs this view
+     * in its constructor.
+     */
     public void setPresenter(MainPresenter presenter) {
         this.presenter = presenter;
     }
@@ -149,9 +156,11 @@ public class MainFrame extends JFrame implements MainView {
         }
         Path path = chosen.get();
         String fileName = path.getFileName().toString();
-        if (fileName.indexOf('.') < 0) {
+
+        if (!fileName.toLowerCase(Locale.ROOT).endsWith(".csv")) {
             path = path.resolveSibling(fileName + ".csv");
         }
+
         if (Files.exists(path)) {
             int answer = JOptionPane.showConfirmDialog(this,
                     "The file " + path.getFileName() + " already exists.\nDo you want to replace it?",
@@ -164,12 +173,12 @@ public class MainFrame extends JFrame implements MainView {
     }
 
     private Optional<Path> toPath(File file) {
-    try {
-        return Optional.of(file.toPath());
-    } catch (InvalidPathException e) {
-        showError("The file name is not valid: " + file.getName());
-        return Optional.empty();
-    }
+        try {
+            return Optional.of(file.toPath());
+        } catch (InvalidPathException e) {
+            showError("The file name is not valid: " + file.getName());
+            return Optional.empty();
+        }
     }
 
     private static JFileChooser createChooser() {
