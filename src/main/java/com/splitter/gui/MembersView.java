@@ -1,6 +1,5 @@
 
 package com.splitter.gui;
-
 import com.splitter.meta.AIGenerated;
 import com.splitter.model.Member;
 
