@@ -1,3 +1,4 @@
+
 package com.splitter.gui;
 
 import com.splitter.exception.ValidationException;
@@ -6,8 +7,16 @@ import com.splitter.model.Member;
 import com.splitter.service.ExpenseService;
 import com.splitter.service.ServiceListener;
 
-/** Presenter of the Members tab. Contains no Swing code. */
-@AIGenerated(tool = "Claude Code", prompt = "P07")
+/**
+ * Presenter of the Members tab.
+ * Contains no Swing code.
+ */
+@AIGenerated(
+        tool = "Claude Code",
+        prompt = "P07",
+        refinedBy = "Dora",
+        changes = "Fix #13: clear the member name field when a group is replaced."
+)
 public class MembersPresenter implements ServiceListener {
 
     private final ExpenseService service;
@@ -18,12 +27,17 @@ public class MembersPresenter implements ServiceListener {
         this.view = view;
     }
 
-    /** Starts listening to the service and shows the current members. */
+    /**
+     * Starts listening to the service and shows the current members.
+     */
     public void start() {
         service.addListener(this);
         view.showMembers(service.getMembers());
     }
 
+    /**
+     * Stops listening to the service.
+     */
     public void stop() {
         service.removeListener(this);
     }
@@ -44,8 +58,21 @@ public class MembersPresenter implements ServiceListener {
         }
     }
 
+    /**
+     * Refreshes the member list after a normal data change.
+     */
     @Override
     public void onDataChanged() {
+        view.showMembers(service.getMembers());
+    }
+
+    /**
+     * Clears the name field and refreshes the member list
+     * when New or Open replaces the current group.
+     */
+    @Override
+    public void onGroupReplaced() {
+        view.clearNameField();
         view.showMembers(service.getMembers());
     }
 }

@@ -26,10 +26,11 @@ import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-
 /**
- * Package gui, 12 test cases. Techniques: equivalence classes for {@link InputParser} and
- * {@link MoneyFormatter}, and fake-view branch checks for the presenters (DESIGN.md 4.4).
+ * Package gui, 12 test cases. Techniques: equivalence classes for
+ * {@link InputParser} and
+ * {@link MoneyFormatter}, and fake-view branch checks for the presenters
+ * (DESIGN.md 4.4).
  */
 
 @AIGenerated(tool = "Claude Code", prompt = "T02")
@@ -273,6 +274,7 @@ class GuiTest {
                 error[0] = message;
             }
         };
+
         MembersPresenter presenter = new MembersPresenter(s, view);
         presenter.start();
         presenter.onAddMember("A");
@@ -329,5 +331,66 @@ class GuiTest {
 
         assertEquals(0, inputs.get(0).value().signum());
         assertEquals(0, inputs.get(1).value().signum());
+    }
+    @Test
+    @DisplayName("TC-G15 MembersPresenter clears name field when group is replaced (New/Open)")
+    void membersPresenterClearsNameFieldOnGroupReplacement() throws StorageException {
+
+        FakeRepository repository = new FakeRepository();
+
+        ExpenseService s = new com.splitter.service.ExpenseServiceImpl(
+                repository,
+                new CommandHistory());
+
+        final int[] clearCalls = { 0 };
+
+        final List<List<Member>> shown = new ArrayList<>();
+
+        MembersView view = new MembersView() {
+
+            @Override
+            public void showMembers(List<Member> members) {
+                shown.add(new ArrayList<>(members));
+            }
+
+            @Override
+            public void showError(String message) {
+            }
+
+            @Override
+            public void clearNameField() {
+                clearCalls[0]++;
+            }
+        };
+
+        MembersPresenter presenter = new MembersPresenter(s, view);
+
+        presenter.start();
+
+        // Normal member changes should not trigger the group-replacement callback.
+        s.addMember("Alice");
+        assertEquals(0, clearCalls[0]);
+
+        // Test New.
+        s.newGroup("Group B");
+
+        assertEquals(1, clearCalls[0]);
+        assertTrue(shown.get(shown.size() - 1).isEmpty());
+
+        // Prepare a group to be opened.
+        Group openedGroup = new Group("Group C");
+        openedGroup.addMember(new Member("Charlie"));
+
+        repository.stored = openedGroup;
+
+        // Test Open.
+        s.open(Path.of("group-c.csv"));
+
+        assertEquals(2, clearCalls[0]);
+        assertEquals(
+                List.of(new Member("Charlie")),
+                shown.get(shown.size() - 1));
+
+        presenter.stop();
     }
 }
