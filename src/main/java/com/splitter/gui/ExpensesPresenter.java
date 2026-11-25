@@ -46,7 +46,8 @@ public class ExpensesPresenter implements ServiceListener {
                              List<ParticipantText> texts) {
         try {
             Money amount = parser.parseMoney(amountText);
-            List<ParticipantInput> inputs = parser.parseInputs(texts, method);            service.addExpense(description, payer, amount, method, inputs);
+            List<ParticipantInput> inputs = parser.parseInputs(texts, method);            
+            service.addExpense(description, payer, amount, method, inputs);
             view.clearForm();
         } catch (ValidationException e) {
             view.showError(e.getMessage());
