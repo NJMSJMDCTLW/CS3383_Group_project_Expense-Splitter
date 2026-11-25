@@ -140,7 +140,7 @@ public class ExpenseServiceImpl implements ExpenseService {
     public void newGroup(String groupName) {
         group = new Group(groupName);
         history.clear();
-        fireDataChanged();
+        fireGroupReplaced();
     }
 
     @Override
@@ -162,8 +162,13 @@ public class ExpenseServiceImpl implements ExpenseService {
         }
         group = loaded;
         history.clear();
-        fireDataChanged();
+        fireGroupReplaced();
     }
+    private void fireGroupReplaced() {
+    for (ServiceListener listener : List.copyOf(listeners)) {
+        listener.onGroupReplaced();
+    }
+}
 
     @Override
     public String getGroupName() {
