@@ -16,9 +16,9 @@ transfers that settle the group up.
 | Name | Student ID | Role |
 |---|---|---|
 | Ng Ka Yeung | 59299349 | Project Manager |
-| Eva * | TBD | Developer |
-| Dora * | TBD | Tester |
-| Ally * | TBD | Analysis and Design |
+| Wang Man Nga | 59291980 | Developer |
+| Yip Man Wai | 59292809 | Tester |
+| Wong Yuet Ki | 59293820 | Analysis and Design |
 
 ---
 
