@@ -23,8 +23,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/** Default {@link ExpenseService}: one group at a time, undo for expense add/remove only. */
-@AIGenerated(tool = "Claude Code", prompt = "P05", refinedBy = "Wang Man Nga", changes = "removeMember() clear undo history so undo will not fail after removing a member.")
+/**
+ * Default {@link ExpenseService}: one group at a time, undo for expense
+ * add/remove only.
+ */
+@AIGenerated(
+    tool = "Claude Code", 
+    prompt = "P05", 
+    refinedBy = "Wang Man Nga, Dora", 
+    changes = "removeMember() clear undo history so undo will not fail after removing a member; Fix #7: notify listeners with onGroupReplaced on New/Open."
+)
 public class ExpenseServiceImpl implements ExpenseService {
 
     private static final String DEFAULT_GROUP_NAME = "New Group";
@@ -63,7 +71,7 @@ public class ExpenseServiceImpl implements ExpenseService {
     @Override
     public void removeMember(Member m) {
         group.removeMember(m);
-        history.clear(); 
+        history.clear();
         fireDataChanged();
     }
 
@@ -74,7 +82,7 @@ public class ExpenseServiceImpl implements ExpenseService {
 
     @Override
     public Expense addExpense(String description, Member payer, Money amount, SplitMethod method,
-                              List<ParticipantInput> inputs) {
+            List<ParticipantInput> inputs) {
         if (payer == null || !group.hasMember(payer)) {
             throw new ValidationException("The payer is not in the group.");
         }
@@ -95,7 +103,8 @@ public class ExpenseServiceImpl implements ExpenseService {
         }
         SplitStrategy strategy = SplitStrategyFactory.forMethod(method);
         Map<Member, Money> shares = strategy.split(amount, inputs);
-        // Validates the description (and everything else) before an id is used up. The id is irrelevant here.
+        // Validates the description (and everything else) before an id is used up. The
+        // id is irrelevant here.
         new Expense(1, description, payer, amount, method, shares);
 
         Expense expense = new Expense(group.allocateExpenseId(), description, payer, amount, method, shares);
@@ -140,7 +149,7 @@ public class ExpenseServiceImpl implements ExpenseService {
     public void newGroup(String groupName) {
         group = new Group(groupName);
         history.clear();
-        fireDataChanged();
+        fireGroupReplaced();
     }
 
     @Override
@@ -162,7 +171,13 @@ public class ExpenseServiceImpl implements ExpenseService {
         }
         group = loaded;
         history.clear();
-        fireDataChanged();
+        fireGroupReplaced();
+    }
+
+    private void fireGroupReplaced() {
+        for (ServiceListener listener : List.copyOf(listeners)) {
+            listener.onGroupReplaced();
+        }
     }
 
     @Override

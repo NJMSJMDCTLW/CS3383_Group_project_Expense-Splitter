@@ -13,9 +13,9 @@ import java.util.List;
 /** Presenter of the Expenses tab. Contains no Swing code. */
 @AIGenerated(
     tool = "Claude Code",
-    prompt = "P08",
+    prompt = "P08", 
     refinedBy = "Dora",
-    changes = "Fix #6: pass split method to InputParser for participant validation."
+    changes = "Fix #6: pass split method to InputParser for participant validation; Fix #7: clear the form when the group is replaced."
 )
 public class ExpensesPresenter implements ServiceListener {
 
@@ -28,7 +28,9 @@ public class ExpensesPresenter implements ServiceListener {
         this.view = view;
     }
 
-    /** Starts listening to the service and shows the current members and expenses. */
+    /**
+     * Starts listening to the service and shows the current members and expenses.
+     */
     public void start() {
         service.addListener(this);
         refresh();
@@ -39,11 +41,13 @@ public class ExpensesPresenter implements ServiceListener {
     }
 
     /**
-     * Turns the typed text into values and adds the expense. The form is cleared only after the expense
-     * was added; if anything is rejected, the message is shown and the form stays as it is.
+     * Turns the typed text into values and adds the expense. The form is cleared
+     * only after the expense
+     * was added; if anything is rejected, the message is shown and the form stays
+     * as it is.
      */
     public void onAddExpense(String description, Member payer, String amountText, SplitMethod method,
-                             List<ParticipantText> texts) {
+            List<ParticipantText> texts) {
         try {
             Money amount = parser.parseMoney(amountText);
             List<ParticipantInput> inputs = parser.parseInputs(texts, method);            
@@ -63,6 +67,12 @@ public class ExpensesPresenter implements ServiceListener {
 
     @Override
     public void onDataChanged() {
+        refresh();
+    }
+
+    @Override
+    public void onGroupReplaced() {
+        view.clearForm();
         refresh();
     }
 
