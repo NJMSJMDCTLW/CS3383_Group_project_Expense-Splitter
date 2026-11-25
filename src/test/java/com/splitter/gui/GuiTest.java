@@ -26,10 +26,12 @@ import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+
 /**
- * Package gui, 10 test cases. Techniques: equivalence classes for {@link InputParser} and
+ * Package gui, 12 test cases. Techniques: equivalence classes for {@link InputParser} and
  * {@link MoneyFormatter}, and fake-view branch checks for the presenters (DESIGN.md 4.4).
  */
+
 @AIGenerated(tool = "Claude Code", prompt = "T02")
 class GuiTest {
 
@@ -156,13 +158,17 @@ class GuiTest {
     }
 
     @Test
-    @DisplayName("TC-G04 parseInputs turns blank text into zero (equivalence)")
-    void parseInputsBlankIsZero() {
+    @DisplayName("TC-G04 parseInputs rejects blank values for EXACT (equivalence)")
+    void parseInputsRejectsBlankExact() {
         InputParser p = new InputParser();
-        List<ParticipantInput> inputs = p.parseInputs(
-                List.of(new ParticipantText(new Member("A"), ""), new ParticipantText(new Member("B"), "5")));
-        assertEquals(0, inputs.get(0).value().signum());
-        assertEquals(5, inputs.get(1).value().intValue());
+
+        List<ParticipantText> texts = List.of(
+                new ParticipantText(new Member("A"), ""),
+                new ParticipantText(new Member("B"), "5"));
+
+        assertThrows(
+                ValidationException.class,
+                () -> p.parseInputs(texts, SplitMethod.EXACT));
     }
 
     @Test
@@ -254,7 +260,7 @@ class GuiTest {
     @DisplayName("TC-G12 MembersPresenter adds/removes members and reports errors (branch)")
     void membersPresenter() {
         ExpenseService s = freshService();
-        final String[] error = {null};
+        final String[] error = { null };
         final java.util.List<List<Member>> shown = new java.util.ArrayList<>();
         MembersView view = new MembersView() {
             @Override
@@ -282,8 +288,8 @@ class GuiTest {
     void balancesAndSettlePresenters() {
         ExpenseService s = freshService();
         s.addMember("A");
-        final int[] balanceCalls = {0};
-        final int[] settleCalls = {0};
+        final int[] balanceCalls = { 0 };
+        final int[] settleCalls = { 0 };
         BalancesView bv = new BalancesView() {
             @Override
             public void showBalances(Map<Member, Money> balances) {
@@ -308,5 +314,20 @@ class GuiTest {
         new SettleUpPresenter(s, sv).start();
         assertEquals(1, balanceCalls[0]);
         assertEquals(1, settleCalls[0]);
+    }
+
+    @Test
+    @DisplayName("TC-G14 parseInputs accepts blank values for EQUAL (equivalence)")
+    void parseInputsBlankIsZeroForEqual() {
+        InputParser parser = new InputParser();
+
+        List<ParticipantInput> inputs = parser.parseInputs(
+                List.of(
+                        new ParticipantText(new Member("A"), ""),
+                        new ParticipantText(new Member("B"), "")),
+                SplitMethod.EQUAL);
+
+        assertEquals(0, inputs.get(0).value().signum());
+        assertEquals(0, inputs.get(1).value().signum());
     }
 }

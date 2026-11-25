@@ -62,8 +62,8 @@ and the duplicate-name check all use this key. `getName()` keeps the user's own 
 | `void removeExpense(int id)` | – | unknown id → error |
 | `List<Expense> getExpenses()` | unmodifiable, sorted by id | – |
 | `int allocateExpenseId()` | the current counter value; the counter then advances by one | – |
-| `int getNextExpenseId()` | the counter value, without advancing (used when saving) | – |
-| `void restoreNextExpenseId(int next)` | – | used when loading; `next` must be ≥ 1 and greater than every expense id currently in the group, otherwise `ValidationException` |
+| `long getNextExpenseId()` | the counter value, without advancing (used when saving) | – |
+| `void restoreNextExpenseId(long next)` | – | used when loading; `next` must be ≥ 1 and greater than every expense id currently in the group, otherwise `ValidationException` |
 
 - The counter starts at 1. Expense ids only increase and are never reused, even after undo. Undoing an
   `AddExpenseCommand` removes the expense but does not decrement the counter. An id that was allocated but
