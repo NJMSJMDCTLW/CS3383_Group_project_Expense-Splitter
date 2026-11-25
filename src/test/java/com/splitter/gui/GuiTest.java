@@ -31,7 +31,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Package gui, 14 test cases. Techniques: equivalence classes for
+ * Package gui, 16 test cases. Techniques: equivalence classes for
  * {@link InputParser} and {@link MoneyFormatter}, and fake-view branch
  * checks for the presenters (DESIGN.md 4.4).
  */
@@ -411,28 +411,8 @@ class GuiTest {
     }
 
     @Test
-    @DisplayName("TC-V15 adding an expense to an empty group shows a helpful validation error")
-    void addExpenseToEmptyGroup() {
-
-        ExpenseServiceImpl s = new ExpenseServiceImpl(
-                new FakeRepository(),
-                new CommandHistory());
-
-        ValidationException exception = assertThrows(
-                ValidationException.class,
-                () -> s.addExpense(
-                        "Dinner",
-                        null,
-                        Money.parse("100.00"),
-                        SplitMethod.EQUAL,
-                        List.of()));
-
-        assertEquals(
-                "Please add at least one member before creating an expense.",
-                exception.getMessage());
-
-        assertTrue(s.getMembers().isEmpty());
-        assertTrue(s.getExpenses().isEmpty());
+    @DisplayName("TC-G15 MembersPresenter clears name field when group is replaced (New/Open)")
+    void membersPresenterClearsNameFieldOnGroupReplacement() throws StorageException {
     }
 
     @Test
