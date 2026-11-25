@@ -7,17 +7,21 @@ import java.util.List;
 
 /**
  * Mutable aggregate that holds the members and the expenses of one group.
- * Expenses are kept sorted by id. Expense ids only increase and are never reused.
+ * Expenses are kept sorted by id. Expense ids only increase and are never
+ * reused.
  */
-@AIGenerated(tool = "Claude Code", prompt = "P02")
+@AIGenerated(tool = "Claude Code", prompt = "P02", refinedBy = "Dora", changes = "Fix #5: long id counter, reject overflow.")
 public class Group {
 
     private final String name;
     private final List<Member> members = new ArrayList<>();
     private final List<Expense> expenses = new ArrayList<>();
-    private int nextExpenseId = 1;
+    private long nextExpenseId = 1L;
 
-    /** @throws ValidationException if the name is null, blank or contains a line break */
+    /**
+     * @throws ValidationException if the name is null, blank or contains a line
+     *                             break
+     */
     public Group(String name) {
         if (name == null || name.isBlank()) {
             throw new ValidationException("Group name must not be empty.");
@@ -32,7 +36,10 @@ public class Group {
         return name;
     }
 
-    /** @throws ValidationException if the member is null or a member with the same key exists */
+    /**
+     * @throws ValidationException if the member is null or a member with the same
+     *                             key exists
+     */
     public void addMember(Member member) {
         if (member == null) {
             throw new ValidationException("Member must not be empty.");
@@ -44,7 +51,8 @@ public class Group {
     }
 
     /**
-     * @throws ValidationException if the member is not in the group, or is the payer or a participant
+     * @throws ValidationException if the member is not in the group, or is the
+     *                             payer or a participant
      *                             (including a zero share) of any existing expense
      */
     public void removeMember(Member member) {
@@ -72,7 +80,8 @@ public class Group {
     /**
      * Stores the expense at the position given by its id.
      *
-     * @throws ValidationException if the expense is null, the payer or a participant is not a member,
+     * @throws ValidationException if the expense is null, the payer or a
+     *                             participant is not a member,
      *                             or an expense with the same id already exists
      */
     public Expense addExpense(Expense expense) {
@@ -118,30 +127,39 @@ public class Group {
 
     /** Returns the current counter value, then advances the counter by one. */
     public int allocateExpenseId() {
-        return nextExpenseId++;
+        if (nextExpenseId > Integer.MAX_VALUE) {
+            throw new ValidationException(
+                    "No more expense IDs are available.");
+        }
+
+        return (int) nextExpenseId++;
     }
 
     /** Returns the counter value without advancing it (used when saving). */
-    public int getNextExpenseId() {
+    public long getNextExpenseId() {
         return nextExpenseId;
     }
 
     /**
      * Sets the counter when a saved group is loaded.
      *
-     * @throws ValidationException if {@code next} is below 1 or not greater than every expense id
+     * @throws ValidationException if {@code next} is below 1 or not greater than
+     *                             every expense id
      *                             currently in the group
      */
-    public void restoreNextExpenseId(int next) {
-        if (next < 1) {
-            throw new ValidationException("The next expense id must be at least 1.");
+    public void restoreNextExpenseId(long next) {
+        if (next < 1 || next > (long) Integer.MAX_VALUE + 1L) {
+            throw new ValidationException(
+                    "The next expense id is outside the supported range.");
         }
+
         for (Expense expense : expenses) {
             if (next <= expense.getId()) {
-                throw new ValidationException("The next expense id (" + next
-                        + ") must be greater than every existing expense id.");
+                throw new ValidationException(
+                        "The next expense id must be greater than every existing expense id.");
             }
         }
+
         nextExpenseId = next;
     }
 }

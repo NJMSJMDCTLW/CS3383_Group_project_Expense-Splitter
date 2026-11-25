@@ -13,8 +13,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Package model, 10 test cases. Techniques: boundary value analysis, equivalence classes and a decision
- * table across {@link Money}, {@link Member}, {@link Group}, {@link Expense} and {@link Transfer}
+ * Package model, 10 test cases. Techniques: boundary value analysis,
+ * equivalence classes and a decision
+ * table across {@link Money}, {@link Member}, {@link Group}, {@link Expense}
+ * and {@link Transfer}
  * (DESIGN.md 2.1-2.6).
  */
 @AIGenerated(tool = "Claude Code", prompt = "T02")
@@ -181,5 +183,25 @@ class ModelTest {
         g.addMember(a);
         assertThrows(ValidationException.class, () -> g.addExpense(expense(1, new Member("X"), a, 100)));
         assertThrows(ValidationException.class, () -> g.addExpense(expense(1, a, new Member("X"), 100)));
+    }
+
+    @Test
+    @DisplayName("TC-D12 expense ID allows Integer.MAX_VALUE once and rejects overflow (boundary)")
+    void expenseIdOverflow() {
+        Group group = new Group("Test Group");
+
+        group.restoreNextExpenseId(Integer.MAX_VALUE);
+
+        assertEquals(
+                Integer.MAX_VALUE,
+                group.allocateExpenseId());
+
+        assertEquals(
+                (long) Integer.MAX_VALUE + 1L,
+                group.getNextExpenseId());
+
+        assertThrows(
+                ValidationException.class,
+                group::allocateExpenseId);
     }
 }
