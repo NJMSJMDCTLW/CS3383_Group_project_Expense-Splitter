@@ -39,7 +39,12 @@ import java.util.Objects;
  * Fields that contain a comma, a quote or a line break are put in double quotes, and a quote inside a
  * quoted field is written twice.
  */
-@AIGenerated(tool = "Claude Code", prompt = "P06", refinedBy = "Wang Man Nga", changes = "Replaced invisible BOM literal with an escape; save() now writes a UTF-8 BOM so Excel shows non-ASCII names correctly (Issue #2)")
+@AIGenerated(
+    tool = "Claude Code",
+    prompt = "P06",
+    refinedBy = "Wang Man Nga, Dora",
+    changes = "Replaced invisible BOM literal with an escape; save() now writes a UTF-8 BOM so Excel shows non-ASCII names correctly (Issue #2); Fix #5: serialize and restore NEXT_ID as long."
+)
 public class FileRepository implements Repository {
 
     /** Excel needs to recognise a CSV file as UTF-8. */
@@ -113,7 +118,7 @@ public class FileRepository implements Repository {
         StringBuilder out = new StringBuilder();
         append(out, MARKER, VERSION);
         append(out, "GROUP", g.getName());
-        append(out, "NEXT_ID", Integer.toString(g.getNextExpenseId()));
+        append(out, "NEXT_ID", Long.toString(g.getNextExpenseId()));
         for (Member member : g.getMembers()) {
             append(out, "MEMBER", member.getName());
         }
@@ -177,7 +182,7 @@ public class FileRepository implements Repository {
         } catch (ValidationException e) {
             throw readError(file, "line " + groupRec.line() + ": " + e.getMessage());
         }
-        int nextId = parseInt(file, nextRec, 1, "next expense id");
+        long nextId = parseLong(file, nextRec, 1, "next expense id");
 
         List<Pending> pending = new ArrayList<>();
         Map<Integer, Pending> pendingById = new LinkedHashMap<>();

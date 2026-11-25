@@ -11,7 +11,12 @@ import com.splitter.split.ParticipantInput;
 import java.util.List;
 
 /** Presenter of the Expenses tab. Contains no Swing code. */
-@AIGenerated(tool = "Claude Code", prompt = "P08")
+@AIGenerated(
+    tool = "Claude Code",
+    prompt = "P08",
+    refinedBy = "Dora",
+    changes = "Fix #6: pass split method to InputParser for participant validation."
+)
 public class ExpensesPresenter implements ServiceListener {
 
     private final ExpenseService service;
@@ -41,14 +46,13 @@ public class ExpensesPresenter implements ServiceListener {
                              List<ParticipantText> texts) {
         try {
             Money amount = parser.parseMoney(amountText);
-            List<ParticipantInput> inputs = parser.parseInputs(texts);
+            List<ParticipantInput> inputs = parser.parseInputs(texts, method);            
             service.addExpense(description, payer, amount, method, inputs);
             view.clearForm();
         } catch (ValidationException e) {
             view.showError(e.getMessage());
         }
     }
-
     public void onRemoveSelected(int expenseId) {
         try {
             service.removeExpense(expenseId);
