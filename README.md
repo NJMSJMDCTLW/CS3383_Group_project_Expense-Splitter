@@ -1,9 +1,7 @@
-<!-- TODO before submission: replace the starred names and the TBD student IDs with the final details. -->
-
 # Group Expense Splitter
 
 **CS3383 Group Project — Group 19**
-Version 1.0.0 · 22 November 2026
+Version 1.0.0 · 26 November 2026
 
 A desktop application for groups that share expenses. It records who paid, splits each
 expense in one of four ways, keeps a running balance for every member, and suggests the
@@ -160,7 +158,8 @@ opening a file or removing a member clears the undo history.
 ### Save, Open and New
 
 - **File → Save...** writes the group, its members, its expenses and the next expense
-  number to a CSV file. If the file name has no extension, `.csv` is added. The program
+  number to a CSV file. If the file name does not already end with `.csv`, the extension
+  `.csv` is appended (for example, `trip.data` becomes `trip.data.csv`). The program
   asks for confirmation before replacing an existing file.
 - **File → Open...** loads a saved group and replaces the current one. If the current
   group already has members or expenses, the program asks for confirmation first. A file
@@ -174,6 +173,7 @@ opening a file or removing a member clears the undo history.
 
 | Item | Rule |
 |---|---|
+| Group name | Not blank, no line breaks |
 | Member name | Trimmed, not blank, at most 30 characters, no line breaks, unique ignoring case and surrounding spaces |
 | Expense description | Not blank, no line breaks |
 | Expense amount | Greater than 0 and at most 1,000,000.00 |
@@ -222,17 +222,23 @@ field is written twice. Amounts are stored as whole cents, so `12000` means `$12
 
 ## Version History
 
-### v1.0.0 — 22 November 2026
+### v1.0.0 — 26 November 2026
 
-First release: members, expenses with four split methods, balances, settle-up
+First full release: members, expenses with four split methods, balances, settle-up
 suggestions, undo of expense changes, and CSV save and open.
 
 Bugs found and fixed during development:
 
-- Non-ASCII member names appeared garbled when the saved file was opened in Excel.
-  Fixed by writing a UTF-8 byte order mark at the start of the file (issue #2).
-- Undo could get stuck after a member was removed. Fixed by clearing the undo history
-  when a member is removed (issue #1).
+- #1 Undo could get stuck after a member was removed; removing a member now clears the undo history.
+- #2 Non-ASCII member names appeared garbled in Excel; CSV files are now written with a UTF-8 BOM.
+- #3 Saving to an invalid file path failed silently; the program now shows an error message.
+- #5 A `NEXT_ID` of `Integer.MAX_VALUE` overflowed; the counter is now stored as a long and overflow is rejected.
+- #6 Blank participant values were accepted as zero in non-Equal splits; they are now rejected.
+- #7 The expense form kept values from the previous group after New/Open; it is now cleared.
+- #9 Adding an expense to an empty group showed a misleading payer error; it now asks for a member first.
+- #10 A file name containing a dot did not get `.csv` appended; `.csv` is now appended unless already present.
+- #13 The member name field was not cleared after New/Open; it is now cleared.
+- #14 The split method dropdown was not visible at startup; the form layout and minimum window size were fixed.
 
 ---
 
@@ -245,6 +251,7 @@ Bugs found and fixed during development:
 - One group is stored per file, and only one person edits a file at a time.
 - No export to PDF or Excel, no charts, and no web or mobile version.
 - The user interface is in English only.
+- Closing the window does not ask to save unsaved changes; use **File → Save...** before closing.
 
 ---
 
@@ -275,6 +282,8 @@ java -jar target/expense-splitter.jar
 JUnit 5 and JaCoCo are configured in `pom.xml`: `mvn test` runs the test suite in
 `src/test/java`, and `mvn verify` also writes the coverage report to
 `target/site/jacoco/index.html`.
+
+Building from source requires JDK 17 and Maven 3.x; running the released jar requires only Java 17.
 
 ---
 
